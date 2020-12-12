@@ -145,7 +145,6 @@ describe('schemas', () => {
   });
 
   afterEach(async () => {
-    await config.database.schemaCache.clear();
     await TestUtils.destroyAllDataPermanently(false);
   });
 

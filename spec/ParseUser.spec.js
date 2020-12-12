@@ -26,8 +26,14 @@ function verifyACL(user) {
   expect(perms['*'].read).toBe(true);
   expect(perms['*'].write).not.toBe(true);
 }
+let config;
 
 describe('Parse.User testing', () => {
+  beforeEach(() => {
+    config = Config.get('test');
+    config.database.schemaCache.clear();
+  });
+
   it('user sign up class method', async done => {
     const user = await Parse.User.signUp('asdf', 'zxcv');
     ok(user.getSessionToken());

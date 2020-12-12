@@ -26,7 +26,6 @@ describe('SchemaController', () => {
   });
 
   afterEach(async () => {
-    await config.database.schemaCache.clear();
     await TestUtils.destroyAllDataPermanently(false);
   });
 
@@ -156,7 +155,7 @@ describe('SchemaController', () => {
           find: {},
         });
       })
-      .then(() => {
+      .then(async () => {
         const query = new Parse.Query('Stuff');
         return query.find();
       })
@@ -1349,17 +1348,6 @@ describe('SchemaController', () => {
       .catch(done.fail);
   });
 
-  it('setAllClasses return classes if cache fails', async () => {
-    const schema = await config.database.loadSchema();
-
-    spyOn(schema._cache, 'setAllClasses').and.callFake(() => Promise.reject('Oops!'));
-    const errorSpy = spyOn(console, 'error').and.callFake(() => {});
-    const allSchema = await schema.setAllClasses();
-
-    expect(allSchema).toBeDefined();
-    expect(errorSpy).toHaveBeenCalledWith('Error saving schema to cache:', 'Oops!');
-  });
-
   it('should not throw on null field types', async () => {
     const schema = await config.database.loadSchema();
     const result = await schema.enforceFieldExists('NewClass', 'fieldName', null);
@@ -1385,6 +1373,7 @@ describe('SchemaController', () => {
 describe('Class Level Permissions for requiredAuth', () => {
   beforeEach(() => {
     config = Config.get('test');
+    config.database.schemaCache.clear();
   });
 
   function createUser() {

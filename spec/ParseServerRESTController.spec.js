@@ -2,13 +2,18 @@ const ParseServerRESTController = require('../lib/ParseServerRESTController')
   .ParseServerRESTController;
 const ParseServer = require('../lib/ParseServer').default;
 const Parse = require('parse/node').Parse;
+const Config = require('../lib/Config');
 const TestUtils = require('../lib/TestUtils');
 const semver = require('semver');
 
 let RESTController;
+let config;
 
 describe('ParseServerRESTController', () => {
   beforeEach(() => {
+    config = Config.get('test');
+    config.database.schemaCache.clear();
+
     RESTController = ParseServerRESTController(
       Parse.applicationId,
       ParseServer.promiseRouter({ appId: Parse.applicationId })

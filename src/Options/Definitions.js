@@ -127,7 +127,8 @@ module.exports.ParseServerOptions = {
   },
   emailVerifyTokenReuseIfValid: {
     env: 'PARSE_SERVER_EMAIL_VERIFY_TOKEN_REUSE_IF_VALID',
-    help: 'an existing email verify token should be reused when resend verification email is requested',
+    help:
+      'an existing email verify token should be reused when resend verification email is requested',
     action: parsers.booleanParser,
     default: false,
   },
@@ -145,13 +146,6 @@ module.exports.ParseServerOptions = {
   enableExpressErrorHandler: {
     env: 'PARSE_SERVER_ENABLE_EXPRESS_ERROR_HANDLER',
     help: 'Enables the default express error handler for all errors',
-    action: parsers.booleanParser,
-    default: false,
-  },
-  enableSingleSchemaCache: {
-    env: 'PARSE_SERVER_ENABLE_SINGLE_SCHEMA_CACHE',
-    help:
-      'Use a single schema cache shared across requests. Reduces number of queries made to _SCHEMA, defaults to false, i.e. unique schema cache per request.',
     action: parsers.booleanParser,
     default: false,
   },
@@ -335,6 +329,13 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_READ_ONLY_MASTER_KEY',
     help: 'Read-only key, which has the same capabilities as MasterKey without writes',
   },
+  replicaSet: {
+    env: 'PARSE_SERVER_REPLICA_SET',
+    help:
+      'If you are using MongoDB specify that you are using replica set. This will allow Parse Server to perform optimizations.',
+    action: parsers.booleanParser,
+    default: false,
+  },
   restAPIKey: {
     env: 'PARSE_SERVER_REST_API_KEY',
     help: 'Key for REST calls',
@@ -351,13 +352,6 @@ module.exports.ParseServerOptions = {
     help: 'Configuration for push scheduling, defaults to false.',
     action: parsers.booleanParser,
     default: false,
-  },
-  schemaCacheTTL: {
-    env: 'PARSE_SERVER_SCHEMA_CACHE_TTL',
-    help:
-      'The TTL for caching the schema for optimizing read/write operations. You should put a long TTL when your DB is in production. default to 5000; set 0 to disable.',
-    action: parsers.numberParser('schemaCacheTTL'),
-    default: 5000,
   },
   serverCloseComplete: {
     env: 'PARSE_SERVER_SERVER_CLOSE_COMPLETE',

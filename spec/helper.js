@@ -88,6 +88,9 @@ const defaultConfiguration = {
   fileKey: 'test',
   silent,
   logLevel,
+  replicaSet:
+    process.env.MONGODB_TOPOLOGY === 'replicaset' &&
+    process.env.MONGODB_STORAGE_ENGINE === 'wiredTiger',
   push: {
     android: {
       senderId: 'yolo',
@@ -159,6 +162,7 @@ const reconfigureServer = changedConfiguration => {
 // Set up a Parse client to talk to our test API server
 const Parse = require('parse/node');
 Parse.serverURL = 'http://localhost:' + port + '/1';
+Parse.CoreManager.set('REQUEST_ATTEMPT_LIMIT', 1);
 
 beforeEach(done => {
   try {
@@ -182,6 +186,8 @@ beforeEach(done => {
     .then(() => {
       Parse.initialize('test', 'test', 'test');
       Parse.serverURL = 'http://localhost:' + port + '/1';
+      Parse.CoreManager.set('REQUEST_ATTEMPT_LIMIT', 1);
+
       done();
     })
     .catch(done.fail);

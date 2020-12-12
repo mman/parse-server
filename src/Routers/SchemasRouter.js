@@ -63,7 +63,10 @@ function createSchema(req) {
         req.body.indexes
       )
     )
-    .then(schema => ({ response: schema }));
+    .then(schema => {
+      SchemaController.clearSingleSchemaCache();
+      return { response: schema };
+    });
 }
 
 function modifySchema(req) {
@@ -107,7 +110,10 @@ const deleteSchema = req => {
       SchemaController.invalidClassNameMessage(req.params.className)
     );
   }
-  return req.config.database.deleteSchema(req.params.className).then(() => ({ response: {} }));
+  return req.config.database.deleteSchema(req.params.className).then(() => {
+    SchemaController.clearSingleSchemaCache();
+    return { response: {} };
+  });
 };
 
 export class SchemasRouter extends PromiseRouter {
