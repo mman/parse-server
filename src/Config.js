@@ -3,6 +3,7 @@
 // mount is the URL for the root of the API; includes http, domain, etc.
 
 import AppCache from './cache';
+import DatabaseController from './Controllers/DatabaseController';
 import net from 'net';
 import { IdempotencyOptions } from './Options/Definitions';
 
@@ -26,7 +27,7 @@ export class Config {
     config.applicationId = applicationId;
     Object.keys(cacheInfo).forEach(key => {
       if (key == 'databaseController') {
-        config.database = cacheInfo.databaseController;
+        config.database = new DatabaseController(cacheInfo.databaseController.adapter);
       } else {
         config[key] = cacheInfo[key];
       }

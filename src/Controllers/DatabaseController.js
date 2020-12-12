@@ -408,6 +408,7 @@ class DatabaseController {
     // Used for Testing only
     this.schemaCache = {
       clear: () => SchemaController.clearSingleSchemaCache(),
+      get: () => SchemaController.getSingleSchemaCache(),
     };
   }
 
@@ -479,7 +480,7 @@ class DatabaseController {
     const acl = runOptions.acl;
     const isMaster = acl === undefined;
     var aclGroup: string[] = acl || [];
-    return this.loadSchema()
+    return this.loadSchema({ clearCache: true })
       .then(s => {
         schema = s;
         if (isMaster) {
@@ -919,9 +920,7 @@ class DatabaseController {
    */
   deleteEverything(fast: boolean = false): Promise<any> {
     this.schemaPromise = null;
-    if (!fast) {
-      this.schemaCache.clear();
-    }
+    this.schemaCache.clear();
     return this.adapter.deleteAllClasses(fast);
   }
 
