@@ -211,7 +211,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       .then(collection => {
         if (!this._stream && this.replicaSet) {
           this._stream = collection._mongoCollection.watch();
-          this._stream.on('change', this._onchange);
+          this._stream.on('change', () => this._onchange());
         }
         return new MongoSchemaCollection(collection);
       });

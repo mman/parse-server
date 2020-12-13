@@ -377,6 +377,21 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
       });
     });
   });
+
+  it('should watch _SCHEMA changes', async () => {
+    const { database } = Config.get(Parse.applicationId);
+    const { adapter } = database;
+
+    spyOn(adapter, 'watch');
+    spyOn(adapter, '_onchange');
+    const schema = await database.loadSchema();
+    // Create a valid class
+    await schema.validateObject('Stuff', { foo: 'bar' });
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    expect(adapter.watch).toHaveBeenCalledTimes(1);
+    expect(adapter._onchange).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe_only_db('postgres')('PostgresStorageAdapter shutdown', () => {

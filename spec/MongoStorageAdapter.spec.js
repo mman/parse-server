@@ -549,5 +549,26 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
         });
       });
     });
+
+    describe('watch _SCHEMA', () => {
+      beforeEach(async () => {
+        await TestUtils.destroyAllDataPermanently(true);
+      });
+
+      it('should change', async () => {
+        const { database } = Config.get(Parse.applicationId);
+        const { adapter } = database;
+
+        spyOn(adapter, 'watch');
+        spyOn(adapter, '_onchange');
+        const schema = await database.loadSchema();
+        // Create a valid class
+        await schema.validateObject('Stuff', { foo: 'bar' });
+        await new Promise(resolve => setTimeout(resolve, 300));
+
+        expect(adapter.watch).toHaveBeenCalledTimes(1);
+        expect(adapter._onchange).toHaveBeenCalledTimes(2);
+      });
+    });
   }
 });

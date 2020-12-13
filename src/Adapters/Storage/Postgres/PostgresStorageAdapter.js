@@ -798,18 +798,21 @@ export class PostgresStorageAdapter implements StorageAdapter {
   // Private
   _collectionPrefix: string;
   _client: any;
+  _onchange: any;
   _pgp: any;
+  _stream: any;
 
   constructor({ uri, collectionPrefix = '', databaseOptions }: any) {
     this._collectionPrefix = collectionPrefix;
     const { client, pgp } = createClient(uri, databaseOptions);
     this._client = client;
+    this._onchange = () => {};
     this._pgp = pgp;
     this.canSortOnJoinTables = false;
   }
 
-  watch(/* callback: () => void */): void {
-    // this._onchange = callback;
+  watch(callback: () => void): void {
+    this._onchange = callback;
   }
 
   //Note that analyze=true will run the query, executing INSERTS, DELETES, etc.
@@ -826,6 +829,14 @@ export class PostgresStorageAdapter implements StorageAdapter {
       return;
     }
     this._client.$pool.end();
+  }
+
+  _notifySchemaChange() {
+    if (this._stream) {
+      this._stream.none('NOTIFY $1~, $2', ['schema.change', '']).catch(error => {
+        console.log('Failed to Notify:', error); // unlikely to ever happen
+      });
+    }
   }
 
   async _ensureSchemaCollectionExists(conn: any) {
@@ -865,6 +876,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
         values
       );
     });
+    this._notifySchemaChange();
   }
 
   async setIndexesWithSchemaFormat(
@@ -926,6 +938,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
         'UPDATE "_SCHEMA" SET $2:name = json_object_set_key($2:name, $3::text, $4::jsonb) WHERE "className" = $1',
         [className, 'schema', 'indexes', JSON.stringify(existingIndexes)]
       );
+      this._notifySchemaChange();
     });
   }
 
@@ -1081,6 +1094,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
           'UPDATE "_SCHEMA" SET "schema"=jsonb_set("schema", $<path>, $<type>)  WHERE "className"=$<className>',
           { path, type, className }
         );
+        this._notifySchemaChange();
       }
     });
   }
@@ -1096,7 +1110,10 @@ export class PostgresStorageAdapter implements StorageAdapter {
       },
     ];
     return this._client
-      .tx(t => t.none(this._pgp.helpers.concat(operations)))
+      .tx('delete-class', async t => {
+        await t.none(this._pgp.helpers.concat(operations));
+        this._notifySchemaChange();
+      })
       .then(() => className.indexOf('_Join:') != 0); // resolves with false when _Join table
   }
 
@@ -1182,6 +1199,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
       if (values.length > 1) {
         await t.none(`ALTER TABLE $1:name DROP COLUMN IF EXISTS ${columns}`, values);
       }
+      this._notifySchemaChange();
     });
   }
 
@@ -2246,6 +2264,11 @@ export class PostgresStorageAdapter implements StorageAdapter {
   }
 
   async performInitialization({ VolatileClassesSchemas }: any) {
+    if (!this._stream) {
+      this._stream = await this._client.connect({ direct: true });
+      this._stream.client.on('notification', () => this._onchange());
+      await this._stream.none('LISTEN $1~', 'schema.change');
+    }
     // TODO: This method needs to be rewritten to make proper use of connections (@vitaly-t)
     debug('performInitialization');
     const promises = VolatileClassesSchemas.map(schema => {
