@@ -155,7 +155,7 @@ describe('SchemaController', () => {
           find: {},
         });
       })
-      .then(async () => {
+      .then(() => {
         const query = new Parse.Query('Stuff');
         return query.find();
       })
@@ -1373,7 +1373,6 @@ describe('SchemaController', () => {
 describe('Class Level Permissions for requiredAuth', () => {
   beforeEach(() => {
     config = Config.get('test');
-    config.database.schemaCache.clear();
   });
 
   function createUser() {

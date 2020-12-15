@@ -4,8 +4,11 @@ const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase'
 
 describe_only_db('mongo')('Schema Performance', function () {
   let getAllSpy;
+  let config;
 
   beforeEach(async () => {
+    config = Config.get('test');
+    config.database.schemaCache.clear();
     const databaseAdapter = new MongoStorageAdapter({ uri: mongoURI });
     await reconfigureServer({
       replicaSet: false,
@@ -18,7 +21,7 @@ describe_only_db('mongo')('Schema Performance', function () {
     const object = new TestObject();
     object.set('foo', 'bar');
     await object.save();
-    expect(getAllSpy.calls.count()).toBe(3);
+    expect(getAllSpy.calls.count()).toBe(2);
   });
 
   it('test new object multiple fields', async () => {
@@ -30,7 +33,7 @@ describe_only_db('mongo')('Schema Performance', function () {
       booleanField: true,
     });
     await container.save();
-    expect(getAllSpy.calls.count()).toBe(3);
+    expect(getAllSpy.calls.count()).toBe(2);
   });
 
   it('test update existing fields', async () => {
@@ -42,7 +45,7 @@ describe_only_db('mongo')('Schema Performance', function () {
 
     object.set('foo', 'barz');
     await object.save();
-    expect(getAllSpy.calls.count()).toBe(1);
+    expect(getAllSpy.calls.count()).toBe(0);
   });
 
   it('test saveAll / destroyAll', async () => {
@@ -58,7 +61,13 @@ describe_only_db('mongo')('Schema Performance', function () {
       objects.push(object);
     }
     await Parse.Object.saveAll(objects);
-    expect(getAllSpy.calls.count()).toBe(11);
+    expect(getAllSpy.calls.count()).toBe(10);
+
+    getAllSpy.calls.reset();
+
+    const query = new Parse.Query(TestObject);
+    await query.find();
+    expect(getAllSpy.calls.count()).toBe(0);
 
     getAllSpy.calls.reset();
 
@@ -79,7 +88,7 @@ describe_only_db('mongo')('Schema Performance', function () {
       objects.push(object);
     }
     await Parse.Object.saveAll(objects, { batchSize: 5 });
-    expect(getAllSpy.calls.count()).toBe(7);
+    expect(getAllSpy.calls.count()).toBe(5);
 
     getAllSpy.calls.reset();
 
@@ -96,7 +105,7 @@ describe_only_db('mongo')('Schema Performance', function () {
 
     object.set('new', 'barz');
     await object.save();
-    expect(getAllSpy.calls.count()).toBe(2);
+    expect(getAllSpy.calls.count()).toBe(1);
   });
 
   it('test add multiple fields to existing object', async () => {
@@ -114,7 +123,7 @@ describe_only_db('mongo')('Schema Performance', function () {
       booleanField: true,
     });
     await object.save();
-    expect(getAllSpy.calls.count()).toBe(2);
+    expect(getAllSpy.calls.count()).toBe(1);
   });
 
   it('test user', async () => {
@@ -123,19 +132,7 @@ describe_only_db('mongo')('Schema Performance', function () {
     user.setPassword('testing');
     await user.signUp();
 
-    expect(getAllSpy.calls.count()).toBe(4);
-  });
-
-  it('test query', async () => {
-    const object = new TestObject();
-    object.set('foo', 'bar');
-    await object.save();
-
-    getAllSpy.calls.reset();
-
-    const query = new Parse.Query(TestObject);
-    await query.get(object.id);
-    expect(getAllSpy.calls.count()).toBe(0);
+    expect(getAllSpy.calls.count()).toBe(1);
   });
 
   it('test query include', async () => {
@@ -190,7 +187,6 @@ describe_only_db('mongo')('Schema Performance', function () {
 
     getAllSpy.calls.reset();
 
-    const config = Config.get('test');
     const schema = await config.database.loadSchema();
     await schema.reloadData();
 
@@ -230,6 +226,6 @@ describe_only_db('mongo')('Schema Performance', function () {
       {},
       config.database
     );
-    expect(getAllSpy.calls.count()).toBe(3);
+    expect(getAllSpy.calls.count()).toBe(0);
   });
 });

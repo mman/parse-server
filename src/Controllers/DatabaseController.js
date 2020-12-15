@@ -480,7 +480,7 @@ class DatabaseController {
     const acl = runOptions.acl;
     const isMaster = acl === undefined;
     var aclGroup: string[] = acl || [];
-    return this.loadSchema({ clearCache: true })
+    return this.loadSchema()
       .then(s => {
         schema = s;
         if (isMaster) {
