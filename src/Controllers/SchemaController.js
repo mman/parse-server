@@ -808,7 +808,19 @@ export default class SchemaController {
           className,
         })
       )
-      .then(convertAdapterSchemaToParseSchema)
+      .then(adapterSchema => {
+        const parseSchema = convertAdapterSchemaToParseSchema(adapterSchema);
+        this._cache.allClasses = this._cache.allClasses || [];
+        const index = this._cache.allClasses.findIndex(
+          cached => cached.className === parseSchema.className
+        );
+        if (index >= 0) {
+          this._cache.allClasses[index] = parseSchema;
+        } else {
+          this._cache.allClasses.push(parseSchema);
+        }
+        return parseSchema;
+      })
       .catch(error => {
         if (error && error.code === Parse.Error.DUPLICATE_VALUE) {
           throw new Parse.Error(
@@ -934,18 +946,7 @@ export default class SchemaController {
     return (
       this.addClassIfNotExists(className)
         // The schema update succeeded. Reload the schema
-        .then(newClassSchema => {
-          singleSchemaCache.allClasses = singleSchemaCache.allClasses || [];
-          const index = singleSchemaCache.allClasses.findIndex(
-            cached => cached.className === newClassSchema.className
-          );
-          if (index >= 0) {
-            singleSchemaCache.allClasses[index] = newClassSchema;
-          } else {
-            singleSchemaCache.allClasses.push(newClassSchema);
-          }
-          return this.reloadData();
-        })
+        .then(() => this.reloadData())
         .catch(() => {
           // The schema update failed. This can be okay - it might
           // have failed because there's a race condition and a different
@@ -1061,9 +1062,10 @@ export default class SchemaController {
     }
     validateCLP(perms, newSchema, this.userIdRegEx);
     await this._dbAdapter.setClassLevelPermissions(className, perms);
-    // const cache = singleSchemaCache.allClasses.find((schema) => schema.className === className);
-    // cache.classLevelPermissions = perms;
-    await this.reloadData({ clearCache: true });
+    const cached = (this._cache.allClasses || []).find(schema => schema.className === className);
+    if (cached) {
+      cached.classLevelPermissions = perms;
+    }
   }
 
   // Returns a promise that resolves successfully to the new schema

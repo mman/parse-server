@@ -1330,8 +1330,12 @@ class DatabaseController {
   }
 
   deleteSchema(className: string): Promise<void> {
+    let schemaController;
     return this.loadSchema({ clearCache: true })
-      .then(schemaController => schemaController.getOneSchema(className, true))
+      .then(s => {
+        schemaController = s;
+        return schemaController.getOneSchema(className, true);
+      })
       .catch(error => {
         if (error === undefined) {
           return { fields: {} };
@@ -1361,7 +1365,10 @@ class DatabaseController {
                   this.adapter.deleteClass(joinTableName(className, name))
                 )
               ).then(() => {
-                return;
+                schemaController._cache.allClasses = (
+                  schemaController._cache.allClasses || []
+                ).filter(cached => cached.className !== className);
+                return schemaController.reloadData();
               });
             } else {
               return Promise.resolve();

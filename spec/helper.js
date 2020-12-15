@@ -185,7 +185,6 @@ beforeEach(done => {
     .then(() => {
       Parse.initialize('test', 'test', 'test');
       Parse.serverURL = 'http://localhost:' + port + '/1';
-
       done();
     })
     .catch(done.fail);
