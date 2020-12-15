@@ -690,7 +690,7 @@ export default class SchemaController {
   constructor(databaseAdapter: StorageAdapter, singleSchemaCache: Object) {
     this._dbAdapter = databaseAdapter;
     this._cache = singleSchemaCache;
-    this.schemaData = new SchemaData();
+    this.schemaData = new SchemaData(this._cache.allClasses || [], this.protectedFields);
     this.protectedFields = Config.get(Parse.applicationId).protectedFields;
 
     const customIds = Config.get(Parse.applicationId).allowCustomObjectId;
@@ -934,7 +934,18 @@ export default class SchemaController {
     return (
       this.addClassIfNotExists(className)
         // The schema update succeeded. Reload the schema
-        .then(() => this.reloadData({ clearCache: true }))
+        .then(newClassSchema => {
+          singleSchemaCache.allClasses = singleSchemaCache.allClasses || [];
+          const index = singleSchemaCache.allClasses.findIndex(
+            cached => cached.className === newClassSchema.className
+          );
+          if (index >= 0) {
+            singleSchemaCache.allClasses[index] = newClassSchema;
+          } else {
+            singleSchemaCache.allClasses.push(newClassSchema);
+          }
+          return this.reloadData();
+        })
         .catch(() => {
           // The schema update failed. This can be okay - it might
           // have failed because there's a race condition and a different

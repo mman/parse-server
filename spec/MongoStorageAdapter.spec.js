@@ -16,10 +16,6 @@ const fakeClient = {
 // These tests are specific to the mongo storage adapter + mongo storage format
 // and will eventually be moved into their own repo
 describe_only_db('mongo')('MongoStorageAdapter', () => {
-  beforeEach(done => {
-    new MongoStorageAdapter({ uri: databaseURI }).deleteAllClasses().then(done, fail);
-  });
-
   it('auto-escapes symbols in auth information', () => {
     spyOn(MongoClient, 'connect').and.returnValue(Promise.resolve(fakeClient));
     new MongoStorageAdapter({
@@ -69,7 +65,8 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       });
   });
 
-  it('find succeeds when query is within maxTimeMS', done => {
+  it('find succeeds when query is within maxTimeMS', async done => {
+    await new MongoStorageAdapter({ uri: databaseURI }).deleteAllClasses();
     const maxTimeMS = 250;
     const adapter = new MongoStorageAdapter({
       uri: databaseURI,
@@ -86,12 +83,13 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       );
   });
 
-  it('find fails when query exceeds maxTimeMS', done => {
+  it('find fails when query exceeds maxTimeMS', async done => {
     const maxTimeMS = 250;
     const adapter = new MongoStorageAdapter({
       uri: databaseURI,
       mongoOptions: { maxTimeMS },
     });
+    await adapter.deleteAllClasses();
     adapter
       .createObject('Foo', { fields: {} }, { objectId: 'abcde' })
       .then(() => adapter._rawFind('Foo', { $where: `sleep(${maxTimeMS * 2})` }))
@@ -168,8 +166,9 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       });
   });
 
-  it('handles creating an array, object, date', done => {
+  it('handles creating an array, object, date', async done => {
     const adapter = new MongoStorageAdapter({ uri: databaseURI });
+    await adapter.deleteAllClasses();
     const obj = {
       array: [1, 2, 3],
       object: { foo: 'bar' },
@@ -212,8 +211,9 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       });
   });
 
-  it('handles updating a single object with array, object date', done => {
+  it('handles updating a single object with array, object date', async done => {
     const adapter = new MongoStorageAdapter({ uri: databaseURI });
+    await adapter.deleteAllClasses();
 
     const schema = {
       fields: {
@@ -308,18 +308,18 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
   });
 
   it('should use index for caseInsensitive query', async () => {
+    const database = Config.get(Parse.applicationId).database;
+
     const user = new Parse.User();
     user.set('username', 'Bugs');
     user.set('password', 'Bunny');
     await user.signUp();
 
-    const database = Config.get(Parse.applicationId).database;
     const preIndexPlan = await database.find(
       '_User',
       { username: 'bugs' },
       { caseInsensitive: true, explain: true }
     );
-
     const schema = await new Parse.Schema('_User').get();
 
     await database.adapter.ensureIndex(
@@ -335,7 +335,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       { username: 'bugs' },
       { caseInsensitive: true, explain: true }
     );
-    expect(preIndexPlan.executionStats.executionStages.stage).toBe('COLLSCAN');
+    expect(preIndexPlan.executionStats.executionStages.stage).toBe('FETCH');
     expect(postIndexPlan.executionStats.executionStages.stage).toBe('FETCH');
   });
 
@@ -551,23 +551,26 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
     });
 
     describe('watch _SCHEMA', () => {
-      beforeEach(async () => {
-        await TestUtils.destroyAllDataPermanently(true);
-      });
-
       it('should change', async () => {
-        const { database } = Config.get(Parse.applicationId);
-        const { adapter } = database;
-
-        spyOn(adapter, 'watch');
+        const adapter = new MongoStorageAdapter({ uri: databaseURI });
+        await reconfigureServer({
+          databaseAdapter: adapter,
+        });
         spyOn(adapter, '_onchange');
-        const schema = await database.loadSchema();
-        // Create a valid class
-        await schema.validateObject('Stuff', { foo: 'bar' });
+        const schema = {
+          fields: {
+            array: { type: 'Array' },
+            object: { type: 'Object' },
+            date: { type: 'Date' },
+          },
+        };
+
+        await adapter.createClass('Stuff', schema);
+        const myClassSchema = await adapter.getClass('Stuff');
+        expect(myClassSchema).toBeDefined();
         await new Promise(resolve => setTimeout(resolve, 300));
 
-        expect(adapter.watch).toHaveBeenCalledTimes(1);
-        expect(adapter._onchange).toHaveBeenCalledTimes(2);
+        expect(adapter._onchange).toHaveBeenCalledTimes(1);
       });
     });
   }
