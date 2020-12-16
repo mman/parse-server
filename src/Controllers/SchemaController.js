@@ -1132,6 +1132,12 @@ export default class SchemaController {
         return Promise.resolve();
       })
       .then(() => {
+        const cached = (this._cache.allClasses || []).find(
+          schema => schema.className === className
+        );
+        if (cached && !cached.fields[fieldName]) {
+          cached.fields[fieldName] = type;
+        }
         return {
           className,
           fieldName,
@@ -1224,7 +1230,7 @@ export default class SchemaController {
   async validateObject(className: string, object: any, query: any) {
     let geocount = 0;
     const schema = await this.enforceClassExists(className);
-    const promises = [];
+    const results = [];
 
     for (const fieldName in object) {
       if (object[fieldName] === undefined) {
@@ -1251,13 +1257,12 @@ export default class SchemaController {
         // Every object has ACL implicitly.
         continue;
       }
-      promises.push(schema.enforceFieldExists(className, fieldName, expected));
+      results.push(await schema.enforceFieldExists(className, fieldName, expected));
     }
-    const results = await Promise.all(promises);
     const enforceFields = results.filter(result => !!result);
 
     if (enforceFields.length !== 0) {
-      await this.reloadData({ clearCache: true });
+      await this.reloadData();
     }
     this.ensureFields(enforceFields);
 

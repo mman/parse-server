@@ -235,12 +235,13 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
   });
 
   it('should use index for caseInsensitive query', async () => {
+    const database = Config.get(Parse.applicationId).database;
+    await database.loadSchema({ clearCache: true });
     const tableName = '_User';
     const user = new Parse.User();
     user.set('username', 'Bugs');
     user.set('password', 'Bunny');
     await user.signUp();
-    const database = Config.get(Parse.applicationId).database;
 
     //Postgres won't take advantage of the index until it has a lot of records because sequential is faster for small db's
     const client = adapter._client;
@@ -289,12 +290,14 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
   });
 
   it('should use index for caseInsensitive query using default indexname', async () => {
+    const database = Config.get(Parse.applicationId).database;
+    await database.loadSchema({ clearCache: true });
     const tableName = '_User';
     const user = new Parse.User();
     user.set('username', 'Bugs');
     user.set('password', 'Bunny');
     await user.signUp();
-    const database = Config.get(Parse.applicationId).database;
+
     const fieldToSearch = 'username';
     //Create index before data is inserted
     const schema = await new Parse.Schema('_User').get();

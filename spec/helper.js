@@ -88,9 +88,7 @@ const defaultConfiguration = {
   fileKey: 'test',
   silent,
   logLevel,
-  replicaSet:
-    process.env.MONGODB_TOPOLOGY === 'replicaset' &&
-    process.env.MONGODB_STORAGE_ENGINE === 'wiredTiger',
+  replicaSet: false,
   push: {
     android: {
       senderId: 'yolo',
