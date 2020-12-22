@@ -149,6 +149,13 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: false,
   },
+  enableSingleSchemaCache: {
+    env: 'PARSE_SERVER_ENABLE_SINGLE_SCHEMA_CACHE',
+    help:
+      'Use a single schema cache shared across requests. Reduces number of queries made to _SCHEMA, defaults to false, i.e. unique schema cache per request.',
+    action: parsers.booleanParser,
+    default: false,
+  },
   encryptionKey: {
     env: 'PARSE_SERVER_ENCRYPTION_KEY',
     help: 'Key for encrypting your files',
@@ -167,6 +174,11 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_FILES_ADAPTER',
     help: 'Adapter module for the files sub-system',
     action: parsers.moduleOrObjectParser,
+  },
+  fileUpload: {
+    env: 'PARSE_SERVER_FILE_UPLOAD_OPTIONS',
+    help: 'Options for file uploads',
+    action: parsers.objectParser,
   },
   graphQLPath: {
     env: 'PARSE_SERVER_GRAPHQL_PATH',
@@ -329,13 +341,6 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_READ_ONLY_MASTER_KEY',
     help: 'Read-only key, which has the same capabilities as MasterKey without writes',
   },
-  replicaSet: {
-    env: 'PARSE_SERVER_REPLICA_SET',
-    help:
-      'If you are using MongoDB specify that you are using replica set. This will allow Parse Server to perform optimizations.',
-    action: parsers.booleanParser,
-    default: false,
-  },
   restAPIKey: {
     env: 'PARSE_SERVER_REST_API_KEY',
     help: 'Key for REST calls',
@@ -352,6 +357,13 @@ module.exports.ParseServerOptions = {
     help: 'Configuration for push scheduling, defaults to false.',
     action: parsers.booleanParser,
     default: false,
+  },
+  schemaCacheTTL: {
+    env: 'PARSE_SERVER_SCHEMA_CACHE_TTL',
+    help:
+      'The TTL for caching the schema for optimizing read/write operations. You should put a long TTL when your DB is in production. default to 5000; set 0 to disable.',
+    action: parsers.numberParser('schemaCacheTTL'),
+    default: 5000,
   },
   serverCloseComplete: {
     env: 'PARSE_SERVER_SERVER_CLOSE_COMPLETE',
@@ -591,5 +603,25 @@ module.exports.PasswordPolicyOptions = {
   validatorPattern: {
     env: 'PARSE_SERVER_PASSWORD_POLICY_VALIDATOR_PATTERN',
     help: 'a RegExp object or a regex string representing the pattern to enforce',
+  },
+};
+module.exports.FileUploadOptions = {
+  enableForAnonymousUser: {
+    env: 'PARSE_SERVER_FILE_UPLOAD_ENABLE_FOR_ANONYMOUS_USER',
+    help: 'Is true if file upload should be allowed for anonymous users.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+  enableForAuthenticatedUser: {
+    env: 'PARSE_SERVER_FILE_UPLOAD_ENABLE_FOR_AUTHENTICATED_USER',
+    help: 'Is true if file upload should be allowed for authenticated users.',
+    action: parsers.booleanParser,
+    default: true,
+  },
+  enableForPublic: {
+    env: 'PARSE_SERVER_FILE_UPLOAD_ENABLE_FOR_PUBLIC',
+    help: 'Is true if file upload should be allowed for anyone, regardless of user authentication.',
+    action: parsers.booleanParser,
+    default: false,
   },
 };

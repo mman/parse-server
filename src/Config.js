@@ -5,7 +5,7 @@
 import AppCache from './cache';
 import DatabaseController from './Controllers/DatabaseController';
 import net from 'net';
-import { IdempotencyOptions } from './Options/Definitions';
+import { IdempotencyOptions, FileUploadOptions } from './Options/Definitions';
 
 function removeTrailingSlash(str) {
   if (!str) {
@@ -65,6 +65,7 @@ export class Config {
     allowHeaders,
     idempotencyOptions,
     emailVerifyTokenReuseIfValid,
+    fileUpload,
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
@@ -82,8 +83,8 @@ export class Config {
     }
 
     this.validateAccountLockoutPolicy(accountLockout);
-
     this.validatePasswordPolicy(passwordPolicy);
+    this.validateFileUploadOptions(fileUpload);
 
     if (typeof revokeSessionOnPasswordReset !== 'boolean') {
       throw 'revokeSessionOnPasswordReset must be a boolean value';
@@ -236,6 +237,30 @@ export class Config {
     }
     if (emailVerifyTokenReuseIfValid && !emailVerifyTokenValidityDuration) {
       throw 'You cannot use emailVerifyTokenReuseIfValid without emailVerifyTokenValidityDuration';
+    }
+  }
+
+  static validateFileUploadOptions(fileUpload) {
+    if (!fileUpload) {
+      fileUpload = {};
+    }
+    if (typeof fileUpload !== 'object' || fileUpload instanceof Array) {
+      throw 'fileUpload must be an object value.';
+    }
+    if (fileUpload.enableForAnonymousUser === undefined) {
+      fileUpload.enableForAnonymousUser = FileUploadOptions.enableForAnonymousUser.default;
+    } else if (typeof fileUpload.enableForAnonymousUser !== 'boolean') {
+      throw 'fileUpload.enableForAnonymousUser must be a boolean value.';
+    }
+    if (fileUpload.enableForPublic === undefined) {
+      fileUpload.enableForPublic = FileUploadOptions.enableForPublic.default;
+    } else if (typeof fileUpload.enableForPublic !== 'boolean') {
+      throw 'fileUpload.enableForPublic must be a boolean value.';
+    }
+    if (fileUpload.enableForAuthenticatedUser === undefined) {
+      fileUpload.enableForAuthenticatedUser = FileUploadOptions.enableForAuthenticatedUser.default;
+    } else if (typeof fileUpload.enableForAuthenticatedUser !== 'boolean') {
+      throw 'fileUpload.enableForAuthenticatedUser must be a boolean value.';
     }
   }
 
