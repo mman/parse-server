@@ -193,19 +193,14 @@ export class PagesRouter extends PromiseRouter {
     const token = rawToken && typeof rawToken !== 'string' ? rawToken.toString() : rawToken;
 
     if (username && (!token || !new_password) && req.xhr === false) {
-      return config.userController.sendPasswordResetEmail(username).then(
-        () => {
-          const params = {
-            [pageParams.appId]: req.params.appId,
-            [pageParams.appName]: config.appName,
-            [pageParams.username]: req.query.username,
-          };
-          return this.goToPage(req, pages.passwordResetInitiated, params);
-        },
-        () => {
-          return this.goToPage(req, pages.passwordResetLinkInvalid);
-        }
-      );
+      return config.userController.sendPasswordResetEmail(username).finally(() => {
+        const params = {
+          [pageParams.appId]: req.params.appId,
+          [pageParams.appName]: config.appName,
+          [pageParams.username]: req.query.username,
+        };
+        return this.goToPage(req, pages.passwordResetInitiated, params);
+      });
     }
 
     if ((!username || !token || !new_password) && req.xhr === false) {
