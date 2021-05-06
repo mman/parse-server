@@ -11,8 +11,12 @@
   - [Please Do's](#please-dos)
   - [Test against Postgres](#test-against-postgres)
     - [Postgres with Docker](#postgres-with-docker)
+- [Breaking Changes](#breaking-changes)
+  - [Deprecation Policy](#deprecation-policy)
 - [Feature Considerations](#feature-considerations)
   - [Security Checks](#security-checks)
+    - [Add Security Check](#add-security-check)
+    - [Wording Guideline](#wording-guideline)
   - [Parse Error](#parse-error)
   - [Parse Server Configuration](#parse-server-configuration)
 - [Code of Conduct](#code-of-conduct)
@@ -56,7 +60,7 @@ Most importantly, with every contribution you improve your skills so that future
 
 ### Recommended Tools
 
-* [vscode](https://code.visualstudio.com), the popular IDE.
+* [Visual Studio Code](https://code.visualstudio.com), the popular IDE.
 * [Jasmine Test Explorer](https://marketplace.visualstudio.com/items?itemName=hbenl.vscode-jasmine-test-adapter), a very practical test exploration plugin which let you run, debug and see the test results inline.
 
 ### Setting up your local machine
@@ -82,6 +86,14 @@ Once you have babel running in watch mode, you can start making changes to parse
 * All the tests should point to sources in the `lib/` folder.
 * The `lib/` folder is produced by `babel` using either the `npm run build`, `npm run watch`, or the `npm run prepare` step.
 * The `npm run prepare` step is automatically invoked when your package depends on forked parse-server installed via git for example using `npm install --save git+https://github.com/[username]/parse-server#[branch/commit]`.
+* The tests are run against a single server instance. You can change the server configurations using `await reconfigureServer({ ... some configuration })` found in `spec/helper.js`.
+* The tests are ran at random.
+* Caches and Configurations are reset after every test.
+* Users are logged out after every test.
+* Cloud Code hooks are removed after every test.
+* Database is deleted after every test (indexes are not removed for speed)
+* Tests are located in the `spec` folder
+* For better test reporting enable `PARSE_SERVER_LOG_LEVEL=debug`
 
 ### Troubleshooting
 
@@ -106,6 +118,7 @@ Once you have babel running in watch mode, you can start making changes to parse
 * Run the tests for the whole project to make sure the code passes all tests. This can be done by running the test command for a single file but removing the test file argument. The results can be seen at *<PROJECT_ROOT>/coverage/lcov-report/index.html*.
 * Lint your code by running `npm run lint` to make sure the code is not going to be rejected by the CI.
 * **Do not** publish the *lib* folder.
+* Mocks belong in the `spec/support` folder.
 * Please consider if any changes to the [docs](http://docs.parseplatform.org) are needed or add additional sections in the case of an enhancement or feature.
 
 ### Test against Postgres
@@ -153,6 +166,31 @@ RUN chmod +x /docker-entrypoint-initdb.d/setup-dbs.sh
 
 Note that the script above will ONLY be executed during initialization of the container with no data in the database, see the official [Postgres image](https://hub.docker.com/_/postgres) for details. If you want to use the script to run again be sure there is no data in the /var/lib/postgresql/data of the container.
 
+## Breaking Changes
+
+Breaking changes should be avoided whenever possible. For a breaking change to be accepted, the benefits of the change have to clearly outweigh the costs of developers having to adapt their deployments. If a breaking change is only cosmetic it will likely be rejected and preferred to become obsolete organically during the course of further development, unless it is required as part of a larger change. Breaking changes should follow the [Deprecation Policy](#deprecation-policy).
+
+Please consider that Parse Server is just one component in a stack that requires attention. A breaking change requires resources and effort to adapt an environment. An unnecessarily high frequency of breaking changes can have detrimental side effects such as:
+- "upgrade fatigue" where developers run old versions of Parse Server because they cannot always attend to every update that contains a breaking change
+- less secure Parse Server deployments that run on old versions which is contrary to the security evangelism Parse Server intends to facilitate for developers
+- less feedback and slower identification of bugs and an overall slow-down of Parse Server development because new versions with breaking changes also include new features we want to get feedback on
+
+### Deprecation Policy
+
+If you change or remove an existing feature that would lead to a breaking change, use the following deprecation pattern:
+  - Make the new feature or change optional, if necessary with a new Parse Server option parameter.
+  - Use a default value that falls back to existing behavior.
+  - Add a deprecation definition in `Deprecator/Deprecations.js` that will output a deprecation warning log message on Parse Server launch, for example:
+    > DeprecationWarning: The Parse Server option 'example' will be removed in a future release.
+  
+Deprecations become breaking changes after notifying developers through deprecation warnings for at least one entire previous major release. For example:
+  - `4.5.0` is the current version
+  - `4.6.0` adds a new optional feature and a deprecation warning for the existing feature
+  - `5.0.0` marks the beginning of logging the deprecation warning for one entire major release
+  - `6.0.0` makes the breaking change by removing the deprecation warning and making the new feature replace the existing feature
+
+Developer feedback during the deprecation period may further postpone the introduction of a breaking change.
+
 ## Feature Considerations
 ### Security Checks
 
@@ -162,13 +200,61 @@ A security check needs to be added for every new feature or enhancement that all
 
 For example, allowing public read and write to a class may be useful to simplify development but should be disallowed in a production environment.
 
-Security checks are added in [SecurityChecks.js](https://github.com/parse-community/parse-server/blob/master/src/SecurityChecks.js).
+Security checks are added in [CheckGroups](https://github.com/parse-community/parse-server/tree/master/src/Security/CheckGroups).
+
+#### Add Security Check
+Adding a new security check for your feature is easy and fast:
+1. Look into [CheckGroups](https://github.com/parse-community/parse-server/tree/master/src/Security/CheckGroups) whether there is an existing `CheckGroup[Category].js` file for the category of check to add. For example, a check regarding the database connection is added to `CheckGroupDatabase.js`.
+2. If you did not find a file, duplicate an existing file and replace the category name in `setName()` and the checks in `setChecks()`:
+    ```js
+    class CheckGroupNewCategory extends CheckGroup {
+      setName() {
+        return 'House';
+      }
+      setChecks() {
+        return [
+          new Check({
+            title: 'Door locked',
+            warning: 'Anyone can enter your house.',
+            solution: 'Lock the door.',
+            check: () => {    
+              return;     // Example of a passing check
+            }
+          }),
+          new Check({
+            title: 'Camera online',
+            warning: 'Security camera is offline.',
+            solution: 'Check the camera.',
+            check: async () => {  
+              throw 1;     // Example of a failing check
+            }
+          }),
+        ];
+      }
+    }
+    ```
+
+3. If you added a new file in the previous step, reference the file in [CheckGroups.js](https://github.com/parse-community/parse-server/blob/master/src/Security/CheckGroups/CheckGroups.js), which is the collector of all security checks:
+    ```
+    export { default as CheckGroupNewCategory } from './CheckGroupNewCategory';
+    ```
+4. Add a test that covers the new check to [SecurityCheckGroups.js](https://github.com/parse-community/parse-server/blob/master/spec/SecurityCheckGroups.js) for the cases of success and failure.
+
+#### Wording Guideline
+Consider the following when adding a new security check:
+- *Group.name*: The category name; ends without period as this is a headline.
+- *Check.title*: Is the positive hypothesis that should be checked, for example "Door locked" instead of "Door unlocked"; ends without period as this is a title.
+- *Check.warning*: The warning if the test fails; ends with period as this is a description.
+- *Check.solution*: The recommended solution if the test fails; ends with period as this is an instruction.
+- The wordings must not contain any sensitive information such as keys, as the security report may be exposed in logs.
+- The wordings should be concise and not contain verbose explanations, for example "Door locked" instead of "Door has been locked securely".
+- Do not use pronouns such as "you" or "your" because log files can have various readers with different roles. Do not use pronouns such as "I" or "me" because although we love it dearly, Parse Server is not a human.
 
 ### Parse Error
 
 Introducing new Parse Errors requires the following steps:
 
-1. Research whether an existing Parse Error already covers the error scenario. Keep in mind that reusing an already existing Parse Error does not allow to distinguish between scenarios in which the same error is thrown, so it may be necessary to add a new and more specific Parse Error, eventhough an more general Parse Error already exists.
+1. Research whether an existing Parse Error already covers the error scenario. Keep in mind that reusing an already existing Parse Error does not allow to distinguish between scenarios in which the same error is thrown, so it may be necessary to add a new and more specific Parse Error, even though a more general Parse Error already exists.
 ⚠️ Currently (as of Dec. 2020), there are inconsistencies between the Parse Errors documented in the Parse Guides, coded in the Parse JS SDK and coded in Parse Server, therefore research regarding the availability of error codes has to be conducted in all of these sources.
 1. Add the new Parse Error to [/src/ParseError.js](https://github.com/parse-community/Parse-SDK-JS/blob/master/src/ParseError.js) in the Parse JavaScript SDK. This is the primary reference for Parse Errors for the Parse JavaScript SDK and Parse Server.
 1. Create a pull request for the Parse JavaScript SDK including the new Parse Errors. The PR needs to be merged and a new Parse JS SDK version needs to be released.
