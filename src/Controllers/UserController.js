@@ -140,6 +140,8 @@ export class UserController extends AdaptableController {
       const link = buildEmailLink(this.config.verifyEmailURL, username, token, this.config);
       const options = {
         appName: this.config.appName,
+        appHomePageURL: this.config.appHomePageURL,
+        appHeroImageURL: this.config.appHeroImageURL,
         link: link,
         user: inflate('_User', user),
       };
@@ -280,6 +282,8 @@ export class UserController extends AdaptableController {
     const link = buildEmailLink(this.config.requestResetPasswordURL, username, token, this.config);
     const options = {
       appName: this.config.appName,
+      appHomePageURL: this.config.appHomePageURL,
+      appHeroImageURL: this.config.appHeroImageURL,
       link: link,
       user: inflate('_User', user),
     };
