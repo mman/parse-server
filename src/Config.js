@@ -3,7 +3,6 @@
 // mount is the URL for the root of the API; includes http, domain, etc.
 
 import AppCache from './cache';
-import SchemaCache from './Controllers/SchemaCache';
 import DatabaseController from './Controllers/DatabaseController';
 import net from 'net';
 import {
@@ -11,6 +10,7 @@ import {
   FileUploadOptions,
   AccountLockoutOptions,
   PagesOptions,
+  SecurityOptions,
 } from './Options/Definitions';
 import { isBoolean, isString } from 'lodash';
 
@@ -34,12 +34,7 @@ export class Config {
     config.applicationId = applicationId;
     Object.keys(cacheInfo).forEach(key => {
       if (key == 'databaseController') {
-        const schemaCache = new SchemaCache(
-          cacheInfo.cacheController,
-          cacheInfo.schemaCacheTTL,
-          cacheInfo.enableSingleSchemaCache
-        );
-        config.database = new DatabaseController(cacheInfo.databaseController.adapter, schemaCache);
+        config.database = new DatabaseController(cacheInfo.databaseController.adapter);
       } else {
         config[key] = cacheInfo[key];
       }
@@ -79,6 +74,8 @@ export class Config {
     emailVerifyTokenReuseIfValid,
     fileUpload,
     pages,
+    security,
+    enforcePrivateUsers,
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
@@ -114,6 +111,30 @@ export class Config {
     this.validateAllowHeaders(allowHeaders);
     this.validateIdempotencyOptions(idempotencyOptions);
     this.validatePagesOptions(pages);
+    this.validateSecurityOptions(security);
+    this.validateEnforcePrivateUsers(enforcePrivateUsers);
+  }
+
+  static validateEnforcePrivateUsers(enforcePrivateUsers) {
+    if (typeof enforcePrivateUsers !== 'boolean') {
+      throw 'Parse Server option enforcePrivateUsers must be a boolean.';
+    }
+  }
+
+  static validateSecurityOptions(security) {
+    if (Object.prototype.toString.call(security) !== '[object Object]') {
+      throw 'Parse Server option security must be an object.';
+    }
+    if (security.enableCheck === undefined) {
+      security.enableCheck = SecurityOptions.enableCheck.default;
+    } else if (!isBoolean(security.enableCheck)) {
+      throw 'Parse Server option security.enableCheck must be a boolean.';
+    }
+    if (security.enableCheckLog === undefined) {
+      security.enableCheckLog = SecurityOptions.enableCheckLog.default;
+    } else if (!isBoolean(security.enableCheckLog)) {
+      throw 'Parse Server option security.enableCheckLog must be a boolean.';
+    }
   }
 
   static validatePagesOptions(pages) {
@@ -167,6 +188,11 @@ export class Config {
       pages.customUrls = PagesOptions.customUrls.default;
     } else if (Object.prototype.toString.call(pages.customUrls) !== '[object Object]') {
       throw 'Parse Server option pages.customUrls must be an object.';
+    }
+    if (pages.customRoutes === undefined) {
+      pages.customRoutes = PagesOptions.customRoutes.default;
+    } else if (!(pages.customRoutes instanceof Array)) {
+      throw 'Parse Server option pages.customRoutes must be an array.';
     }
   }
 
@@ -458,7 +484,7 @@ export class Config {
   }
 
   get requestResetPasswordURL() {
-    return `${this.publicServerURL}/apps/${this.applicationId}/request_password_reset`;
+    return `${this.publicServerURL}/${this.pagesEndpoint}/${this.applicationId}/request_password_reset`;
   }
 
   get passwordResetSuccessURL() {
@@ -473,7 +499,15 @@ export class Config {
   }
 
   get verifyEmailURL() {
-    return `${this.publicServerURL}/apps/${this.applicationId}/verify_email`;
+    return `${this.publicServerURL}/${this.pagesEndpoint}/${this.applicationId}/verify_email`;
+  }
+
+  // TODO: Remove this function once PagesRouter replaces the PublicAPIRouter;
+  // the (default) endpoint has to be defined in PagesRouter only.
+  get pagesEndpoint() {
+    return this.pages && this.pages.enableRouter && this.pages.pagesEndpoint
+      ? this.pages.pagesEndpoint
+      : 'apps';
   }
 }
 
