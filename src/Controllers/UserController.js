@@ -145,6 +145,8 @@ export class UserController extends AdaptableController {
       const link = buildEmailLink(this.config.verifyEmailURL, username, token, this.config);
       const options = {
         appName: this.config.appName,
+        appHomePageURL: this.config.appHomePageURL,
+        appHeroImageURL: this.config.appHeroImageURL,
         link: link,
         user: inflate('_User', user),
       };
@@ -209,6 +211,42 @@ export class UserController extends AdaptableController {
     );
   }
 
+  async createPasswordResetLink(email) {
+    let user;
+    if (
+      this.config.passwordPolicy &&
+      this.config.passwordPolicy.resetTokenReuseIfValid &&
+      this.config.passwordPolicy.resetTokenValidityDuration
+    ) {
+      const results = await this.config.database.find(
+        '_User',
+        {
+          $or: [
+            { email, _perishable_token: { $exists: true } },
+            { username: email, email: { $exists: false }, _perishable_token: { $exists: true } },
+          ],
+        },
+        { limit: 1 }
+      );
+      if (results.length == 1) {
+        let expiresDate = results[0]._perishable_token_expires_at;
+        if (expiresDate && expiresDate.__type == 'Date') {
+          expiresDate = new Date(expiresDate.iso);
+        }
+        if (expiresDate > new Date()) {
+          user = results[0];
+        }
+      }
+    }
+    if (!user || !user._perishable_token) {
+      user = await this.setPasswordResetToken(email);
+    }
+    const token = encodeURIComponent(user._perishable_token);
+    const username = encodeURIComponent(user.username);
+
+    return buildEmailLink(this.config.requestResetPasswordURL, username, token, this.config);
+  }
+
   async sendPasswordResetEmail(email) {
     if (!this.adapter) {
       throw 'Trying to send a reset password but no adapter is set';
@@ -249,6 +287,8 @@ export class UserController extends AdaptableController {
     const link = buildEmailLink(this.config.requestResetPasswordURL, username, token, this.config);
     const options = {
       appName: this.config.appName,
+      appHomePageURL: this.config.appHomePageURL,
+      appHeroImageURL: this.config.appHeroImageURL,
       link: link,
       user: inflate('_User', user),
     };
