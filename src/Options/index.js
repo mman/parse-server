@@ -1,11 +1,11 @@
 // @flow
 import { AnalyticsAdapter } from '../Adapters/Analytics/AnalyticsAdapter';
-import { FilesAdapter } from '../Adapters/Files/FilesAdapter';
-import { LoggerAdapter } from '../Adapters/Logger/LoggerAdapter';
-import { StorageAdapter } from '../Adapters/Storage/StorageAdapter';
 import { CacheAdapter } from '../Adapters/Cache/CacheAdapter';
 import { MailAdapter } from '../Adapters/Email/MailAdapter';
+import { FilesAdapter } from '../Adapters/Files/FilesAdapter';
+import { LoggerAdapter } from '../Adapters/Logger/LoggerAdapter';
 import { PubSubAdapter } from '../Adapters/PubSub/PubSubAdapter';
+import { StorageAdapter } from '../Adapters/Storage/StorageAdapter';
 import { WSSAdapter } from '../Adapters/WebSocketServer/WSSAdapter';
 import { CheckGroup } from '../Security/CheckGroup';
 
@@ -81,6 +81,9 @@ export interface ParseServerOptions {
   verbose: ?boolean;
   /* Sets the level for logs */
   logLevel: ?string;
+  /* (Optional) Overrides the log levels used internally by Parse Server to log events.
+  :DEFAULT: {} */
+  logLevels: ?LogLevels;
   /* Maximum number of logs to keep. If not set, no logs will be removed. This can be a number of files or number of days. If using days, add 'd' as the suffix. (default: null) */
   maxLogFiles: ?NumberOrString;
   /* Disables console output
@@ -238,6 +241,9 @@ export interface ParseServerOptions {
   cluster: ?NumberOrBoolean;
   /* middleware for express server, can be string or function */
   middleware: ?((() => void) | string);
+  /* The trust proxy settings. It is important to understand the exact setup of the reverse proxy, since this setting will trust values provided in the Parse Server API request. See the <a href="https://expressjs.com/en/guide/behind-proxies.html">express trust proxy settings</a> documentation. Defaults to `false`.
+  :DEFAULT: false */
+  trustProxy: ?any;
   /* Starts the liveQuery server */
   startLiveQueryServer: ?boolean;
   /* Live query server configuration options (will start the liveQuery server) */
@@ -268,8 +274,6 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_PLAYGROUND_PATH
   :DEFAULT: /playground */
   playgroundPath: ?string;
-  /* Callback when server has started */
-  serverStartComplete: ?(error: ?Error) => void;
   /* Defined schema
   :ENV: PARSE_SERVER_SCHEMA
   */
@@ -288,6 +292,29 @@ export interface ParseServerOptions {
   /* An array of keys and values that are prohibited in database read and write requests to prevent potential security vulnerabilities. It is possible to specify only a key (`{"key":"..."}`), only a value (`{"value":"..."}`) or a key-value pair (`{"key":"...","value":"..."}`). The specification can use the following types: `boolean`, `numeric` or `string`, where `string` will be interpreted as a regex notation. Request data is deep-scanned for matching definitions to detect also any nested occurrences. Defaults are patterns that are likely to be used in malicious requests. Setting this option will override the default patterns.
   :DEFAULT: [{"key":"_bsontype","value":"Code"},{"key":"constructor"},{"key":"__proto__"}] */
   requestKeywordDenylist: ?(RequestKeywordDenylist[]);
+  /* Options to limit repeated requests to Parse Server APIs. This can be used to protect sensitive endpoints such as `/requestPasswordReset` from brute-force attacks or Parse Server as a whole from denial-of-service (DoS) attacks.<br><br>ℹ️ Mind the following limitations:<br>- rate limits applied per IP address; this limits protection against distributed denial-of-service (DDoS) attacks where many requests are coming from various IP addresses<br>- if multiple Parse Server instances are behind a load balancer or ran in a cluster, each instance will calculate it's own request rates, independent from other instances; this limits the applicability of this feature when using a load balancer and another rate limiting solution that takes requests across all instances into account may be more suitable<br>- this feature provides basic protection against denial-of-service attacks, but a more sophisticated solution works earlier in the request flow and prevents a malicious requests to even reach a server instance; it's therefore recommended to implement a solution according to architecture and user case.
+  :DEFAULT: [] */
+  rateLimit: ?(RateLimitOptions[]);
+}
+
+export interface RateLimitOptions {
+  /* The path of the API route to be rate limited. Route paths, in combination with a request method, define the endpoints at which requests can be made. Route paths can be strings, string patterns, or regular expression. See: https://expressjs.com/en/guide/routing.html */
+  requestPath: string;
+  /* The window of time in milliseconds within which the number of requests set in `requestCount` can be made before the rate limit is applied. */
+  requestTimeWindow: ?number;
+  /* The number of requests that can be made per IP address within the time window set in `requestTimeWindow` before the rate limit is applied. */
+  requestCount: ?number;
+  /* The error message that should be returned in the body of the HTTP 429 response when the rate limit is hit. Default is `Too many requests.`.
+  :DEFAULT: Too many requests. */
+  errorResponseMessage: ?string;
+  /* Optional, the HTTP request methods to which the rate limit should be applied, default is all methods. */
+  requestMethods: ?(string[]);
+  /* Optional, if `true` the rate limit will also apply to requests using the `masterKey`, default is `false`. Note that a public Cloud Code function that triggers internal requests using the `masterKey` may circumvent rate limiting and be vulnerable to attacks.
+  :DEFAULT: false */
+  includeMasterKey: ?boolean;
+  /* Optional, if `true` the rate limit will also apply to requests that are made in by Cloud Code, default is `false`. Note that a public Cloud Code function that triggers internal requests may circumvent rate limiting and be vulnerable to attacks.
+  :DEFAULT: false */
+  includeInternalRequests: ?boolean;
 }
 
 export interface SecurityOptions {
@@ -519,4 +546,19 @@ export interface AuthAdapter {
   :ENV:
   */
   enabled: ?boolean;
+}
+
+export interface LogLevels {
+  /* Log level used by the Cloud Code Triggers `afterSave`, `afterDelete`, `afterSaveFile`, `afterDeleteFile`, `afterFind`, `afterLogout`. Default is `info`.
+  :DEFAULT: info
+  */
+  triggerAfter: ?string;
+  /* Log level used by the Cloud Code Triggers `beforeSave`, `beforeSaveFile`, `beforeDeleteFile`, `beforeFind`, `beforeLogin` on success. Default is `info`.
+  :DEFAULT: info
+  */
+  triggerBeforeSuccess: ?string;
+  /* Log level used by the Cloud Code Triggers `beforeSave`, `beforeSaveFile`, `beforeDeleteFile`, `beforeFind`, `beforeLogin` on error. Default is `error `.
+  :DEFAULT: error
+  */
+  triggerBeforeError: ?string;
 }
