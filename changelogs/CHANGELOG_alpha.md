@@ -1,3 +1,24 @@
+# [6.0.0-alpha.34](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.33...6.0.0-alpha.34) (2023-02-24)
+
+
+### Features
+
+* Add Parse Server option `resetPasswordSuccessOnInvalidEmail` to choose success or error response on password reset with invalid email ([#7551](https://github.com/parse-community/parse-server/issues/7551)) ([e5d610e](https://github.com/parse-community/parse-server/commit/e5d610e5e487ddab86409409ac3d7362aba8f59b))
+
+# [6.0.0-alpha.33](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.32...6.0.0-alpha.33) (2023-02-17)
+
+
+### Features
+
+* Deprecate LiveQuery `fields` option in favor of `keys` for semantic consistency ([#8388](https://github.com/parse-community/parse-server/issues/8388)) ([a49e323](https://github.com/parse-community/parse-server/commit/a49e323d5ae640bff1c6603ec37fdaddb9328dd1))
+
+# [6.0.0-alpha.32](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.31...6.0.0-alpha.32) (2023-02-07)
+
+
+### Bug Fixes
+
+* Security upgrade jsonwebtoken to 9.0.0 ([#8420](https://github.com/parse-community/parse-server/issues/8420)) ([f5bfe45](https://github.com/parse-community/parse-server/commit/f5bfe4571e82b2b7440d41f3cff0d49937398164))
+
 # [6.0.0-alpha.31](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.30...6.0.0-alpha.31) (2023-01-31)
 
 
