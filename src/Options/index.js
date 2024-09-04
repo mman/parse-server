@@ -60,6 +60,10 @@ export interface ParseServerOptions {
   maintenanceKeyIps: ?(string[]);
   /* Sets the app name */
   appName: ?string;
+  /* Sets the app home page URL */
+  appHomePageURL: ?string;
+  /* Sets the app hero image URL */
+  appHeroImageURL: ?string;
   /* Add headers to Access-Control-Allow-Headers */
   allowHeaders: ?(string[]);
   /* Sets origins for Access-Control-Allow-Origin. This can be a string for a single origin or an array of strings for multiple origins. */
