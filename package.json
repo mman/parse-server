@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "7.4.0-alpha.5",
+  "version": "7.4.0-alpha.7",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -21,17 +21,17 @@
   "dependencies": {
     "@apollo/server": "4.11.2",
     "@babel/eslint-parser": "7.25.9",
-    "@graphql-tools/merge": "9.0.8",
-    "@graphql-tools/schema": "10.0.7",
-    "@graphql-tools/utils": "10.5.5",
+    "@graphql-tools/merge": "9.0.14",
+    "@graphql-tools/schema": "10.0.13",
+    "@graphql-tools/utils": "10.6.3",
     "@parse/fs-files-adapter": "3.0.0",
-    "@parse/push-adapter": "6.7.0",
+    "@parse/push-adapter": "6.8.0",
     "bcryptjs": "2.4.3",
     "body-parser": "1.20.3",
     "commander": "12.1.0",
     "cors": "2.8.5",
     "deepcopy": "2.1.0",
-    "express": "4.21.1",
+    "express": "4.21.2",
     "express-rate-limit": "7.4.1",
     "follow-redirects": "1.15.9",
     "graphql": "16.9.0",
@@ -46,9 +46,9 @@
     "lodash": "4.17.21",
     "lru-cache": "10.4.0",
     "mime": "4.0.4",
-    "mongodb": "6.10.0",
+    "mongodb": "6.12.0",
     "mustache": "4.2.0",
-    "otpauth": "9.3.4",
+    "otpauth": "9.3.5",
     "parse": "5.3.0",
     "path-to-regexp": "6.3.0",
     "pg-monitor": "2.1.0",
@@ -67,8 +67,8 @@
   },
   "devDependencies": {
     "@actions/core": "1.11.1",
-    "@apollo/client": "3.11.9",
-    "@babel/cli": "7.25.9",
+    "@apollo/client": "3.12.3",
+    "@babel/cli": "7.26.4",
     "@babel/core": "7.26.0",
     "@babel/plugin-proposal-object-rest-spread": "7.20.7",
     "@babel/plugin-transform-flow-strip-types": "7.25.9",
@@ -90,12 +90,12 @@
     "flow-bin": "0.119.1",
     "form-data": "4.0.1",
     "graphql-tag": "2.12.6",
-    "husky": "9.1.6",
+    "husky": "9.1.7",
     "jasmine": "3.5.0",
     "jasmine-spec-reporter": "7.0.0",
     "jsdoc": "4.0.4",
     "jsdoc-babel": "0.5.0",
-    "lint-staged": "15.2.10",
+    "lint-staged": "15.2.11",
     "m": "1.9.0",
     "madge": "8.0.0",
     "mock-files-adapter": "file:spec/dependencies/mock-files-adapter",
@@ -106,7 +106,7 @@
     "nyc": "17.1.0",
     "prettier": "2.0.5",
     "semantic-release": "24.2.0",
-    "yaml": "2.6.0"
+    "yaml": "2.6.1"
   },
   "scripts": {
     "ci:check": "node ./ci/ciCheck.js",
@@ -126,6 +126,7 @@
     "test:mongodb:5.3.2": "npm run test:mongodb --dbversion=5.3.2",
     "test:mongodb:6.0.2": "npm run test:mongodb --dbversion=6.0.2",
     "test:mongodb:7.0.1": "npm run test:mongodb --dbversion=7.0.1",
+    "test:mongodb:8.0.3": "npm run test:mongodb --dbversion=8.0.3",
     "test:postgres:testonly": "cross-env PARSE_SERVER_TEST_DB=postgres PARSE_SERVER_TEST_DATABASE_URI=postgres://postgres:password@localhost:5432/parse_server_postgres_adapter_test_database npm run testonly",
     "pretest": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=5.3.2} MONGODB_TOPOLOGY=${MONGODB_TOPOLOGY:=standalone} mongodb-runner start -t ${MONGODB_TOPOLOGY} --version ${MONGODB_VERSION} -- --port 27017",
     "testonly": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=5.3.2} MONGODB_TOPOLOGY=${MONGODB_TOPOLOGY:=standalone} TESTING=1 jasmine",
@@ -145,7 +146,7 @@
     "parse-server": "bin/parse-server"
   },
   "optionalDependencies": {
-    "@node-rs/bcrypt": "1.10.5"
+    "@node-rs/bcrypt": "1.10.7"
   },
   "collective": {
     "type": "opencollective",
