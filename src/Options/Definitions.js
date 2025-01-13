@@ -100,6 +100,14 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_APP_NAME',
     help: 'Sets the app name',
   },
+  appHomePageURL: {
+    env: 'PARSE_SERVER_APP_HOMEPAGE_URL',
+    help: 'Sets the app home page URL',
+  },
+  appHeroImageURL: {
+    env: 'PARSE_SERVER_APP_HERO_IMAGE_URL',
+    help: 'Sets the app hero image URL',
+  },
   auth: {
     env: 'PARSE_SERVER_AUTH_PROVIDERS',
     help:
