@@ -1,3 +1,17 @@
+# [9.4.0-alpha.2](https://github.com/parse-community/parse-server/compare/9.4.0-alpha.1...9.4.0-alpha.2) (2026-02-27)
+
+
+### Bug Fixes
+
+* `PagesRouter` header parameters are not URL-encoded to support non-ASCII characters in app name ([#10078](https://github.com/parse-community/parse-server/issues/10078)) ([c92660b](https://github.com/parse-community/parse-server/commit/c92660bd9a776eec81e4ef18217916b931c267a1))
+
+# [9.4.0-alpha.1](https://github.com/parse-community/parse-server/compare/9.3.1...9.4.0-alpha.1) (2026-02-26)
+
+
+### Features
+
+* Add support for `Parse.File.setDirectory()` with master key to save file in directory ([#10076](https://github.com/parse-community/parse-server/issues/10076)) ([17d987c](https://github.com/parse-community/parse-server/commit/17d987c95accdb2d75f63aed25abd919b0999589))
+
 ## [9.3.1-alpha.4](https://github.com/parse-community/parse-server/compare/9.3.1-alpha.3...9.3.1-alpha.4) (2026-02-23)
 
 
