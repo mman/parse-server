@@ -31,4 +31,14 @@ module.exports = [
     changeNewDefault: '["127.0.0.1", "::1"]',
     solution: "Set 'readOnlyMasterKeyIps' to the IP addresses that should be allowed to use the read-only master key, or to '[\"127.0.0.1\", \"::1\"]' to restrict access to localhost.",
   },
+  {
+    optionKey: 'mountPlayground',
+    changeNewKey: '',
+    solution: "Use Parse Dashboard as GraphQL IDE or configure a third-party GraphQL client such as Apollo Sandbox, GraphiQL, or Insomnia with custom request headers.",
+  },
+  {
+    optionKey: 'playgroundPath',
+    changeNewKey: '',
+    solution: "Use Parse Dashboard as GraphQL IDE or configure a third-party GraphQL client such as Apollo Sandbox, GraphiQL, or Insomnia with custom request headers.",
+  },
 ];
