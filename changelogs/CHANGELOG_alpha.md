@@ -1,3 +1,10 @@
+# [9.5.0-alpha.13](https://github.com/parse-community/parse-server/compare/9.5.0-alpha.12...9.5.0-alpha.13) (2026-03-06)
+
+
+### Features
+
+* Deprecate GraphQL Playground that exposes master key in HTTP response  ([#10112](https://github.com/parse-community/parse-server/issues/10112)) ([d54d800](https://github.com/parse-community/parse-server/commit/d54d800f596f1937701f5bd57c81104f102bc3ae))
+
 # [9.5.0-alpha.12](https://github.com/parse-community/parse-server/compare/9.5.0-alpha.11...9.5.0-alpha.12) (2026-03-06)
 
 
