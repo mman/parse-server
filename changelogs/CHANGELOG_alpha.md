@@ -1,3 +1,10 @@
+## [9.5.2-alpha.2](https://github.com/parse-community/parse-server/compare/9.5.2-alpha.1...9.5.2-alpha.2) (2026-03-07)
+
+
+### Bug Fixes
+
+* Denial-of-service via unbounded query complexity in REST and GraphQL API ([GHSA-cmj3-wx7h-ffvg](https://github.com/parse-community/parse-server/security/advisories/GHSA-cmj3-wx7h-ffvg)) ([#10130](https://github.com/parse-community/parse-server/issues/10130)) ([0ae9c25](https://github.com/parse-community/parse-server/commit/0ae9c25bc13847d547871511749b58b575b96333))
+
 ## [9.5.2-alpha.1](https://github.com/parse-community/parse-server/compare/9.5.1...9.5.2-alpha.1) (2026-03-07)
 
 
