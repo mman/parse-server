@@ -160,7 +160,228 @@ describe('Vulnerabilities', () => {
     });
   });
 
+  describe('(GHSA-5j86-7r7m-p8h6) Cloud function name prototype chain bypass', () => {
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+    };
+
+    it('rejects "constructor" as cloud function name', async () => {
+      const response = await request({
+        headers,
+        method: 'POST',
+        url: 'http://localhost:8378/1/functions/constructor',
+        body: JSON.stringify({}),
+      }).catch(e => e);
+      expect(response.status).toBe(400);
+      const text = JSON.parse(response.text);
+      expect(text.code).toBe(Parse.Error.SCRIPT_FAILED);
+      expect(text.error).toContain('Invalid function');
+    });
+
+    it('rejects "toString" as cloud function name', async () => {
+      const response = await request({
+        headers,
+        method: 'POST',
+        url: 'http://localhost:8378/1/functions/toString',
+        body: JSON.stringify({}),
+      }).catch(e => e);
+      expect(response.status).toBe(400);
+      const text = JSON.parse(response.text);
+      expect(text.code).toBe(Parse.Error.SCRIPT_FAILED);
+      expect(text.error).toContain('Invalid function');
+    });
+
+    it('rejects "valueOf" as cloud function name', async () => {
+      const response = await request({
+        headers,
+        method: 'POST',
+        url: 'http://localhost:8378/1/functions/valueOf',
+        body: JSON.stringify({}),
+      }).catch(e => e);
+      expect(response.status).toBe(400);
+      const text = JSON.parse(response.text);
+      expect(text.code).toBe(Parse.Error.SCRIPT_FAILED);
+      expect(text.error).toContain('Invalid function');
+    });
+
+    it('rejects "hasOwnProperty" as cloud function name', async () => {
+      const response = await request({
+        headers,
+        method: 'POST',
+        url: 'http://localhost:8378/1/functions/hasOwnProperty',
+        body: JSON.stringify({}),
+      }).catch(e => e);
+      expect(response.status).toBe(400);
+      const text = JSON.parse(response.text);
+      expect(text.code).toBe(Parse.Error.SCRIPT_FAILED);
+      expect(text.error).toContain('Invalid function');
+    });
+
+    it('rejects "__proto__.toString" as cloud function name', async () => {
+      const response = await request({
+        headers,
+        method: 'POST',
+        url: 'http://localhost:8378/1/functions/__proto__.toString',
+        body: JSON.stringify({}),
+      }).catch(e => e);
+      expect(response.status).toBe(400);
+      const text = JSON.parse(response.text);
+      expect(text.code).toBe(Parse.Error.SCRIPT_FAILED);
+      expect(text.error).toContain('Invalid function');
+    });
+
+    it('still executes a legitimately defined cloud function', async () => {
+      Parse.Cloud.define('legitimateFunction', () => 'hello');
+      const response = await request({
+        headers,
+        method: 'POST',
+        url: 'http://localhost:8378/1/functions/legitimateFunction',
+        body: JSON.stringify({}),
+      });
+      expect(response.status).toBe(200);
+      expect(JSON.parse(response.text).result).toBe('hello');
+    });
+  });
+
   describe('Request denylist', () => {
+    describe('(GHSA-q342-9w2p-57fp) Denylist bypass via sibling nested objects', () => {
+      it('denies _bsontype:Code after a sibling nested object', async () => {
+        const headers = {
+          'Content-Type': 'application/json',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        };
+        const response = await request({
+          headers,
+          method: 'POST',
+          url: 'http://localhost:8378/1/classes/Bypass',
+          body: JSON.stringify({
+            obj: {
+              metadata: {},
+              _bsontype: 'Code',
+              code: 'malicious',
+            },
+          }),
+        }).catch(e => e);
+        expect(response.status).toBe(400);
+        const text = JSON.parse(response.text);
+        expect(text.code).toBe(Parse.Error.INVALID_KEY_NAME);
+        expect(text.error).toBe(
+          'Prohibited keyword in request data: {"key":"_bsontype","value":"Code"}.'
+        );
+      });
+
+      it('denies _bsontype:Code after a sibling nested array', async () => {
+        const headers = {
+          'Content-Type': 'application/json',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        };
+        const response = await request({
+          headers,
+          method: 'POST',
+          url: 'http://localhost:8378/1/classes/Bypass',
+          body: JSON.stringify({
+            obj: {
+              tags: ['safe'],
+              _bsontype: 'Code',
+              code: 'malicious',
+            },
+          }),
+        }).catch(e => e);
+        expect(response.status).toBe(400);
+        const text = JSON.parse(response.text);
+        expect(text.code).toBe(Parse.Error.INVALID_KEY_NAME);
+        expect(text.error).toBe(
+          'Prohibited keyword in request data: {"key":"_bsontype","value":"Code"}.'
+        );
+      });
+
+      it('denies __proto__ after a sibling nested object', async () => {
+        // Cannot test via HTTP because deepcopy() strips __proto__ before the denylist
+        // check runs. Test objectContainsKeyValue directly with a JSON.parse'd object
+        // that preserves __proto__ as an own property.
+        const Utils = require('../lib/Utils');
+        const data = JSON.parse('{"profile": {"name": "alice"}, "__proto__": {"isAdmin": true}}');
+        expect(Utils.objectContainsKeyValue(data, '__proto__', undefined)).toBe(true);
+      });
+
+      it('denies constructor after a sibling nested object', async () => {
+        const headers = {
+          'Content-Type': 'application/json',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        };
+        const response = await request({
+          headers,
+          method: 'POST',
+          url: 'http://localhost:8378/1/classes/Bypass',
+          body: JSON.stringify({
+            obj: {
+              data: {},
+              constructor: { prototype: { polluted: true } },
+            },
+          }),
+        }).catch(e => e);
+        expect(response.status).toBe(400);
+        const text = JSON.parse(response.text);
+        expect(text.code).toBe(Parse.Error.INVALID_KEY_NAME);
+        expect(text.error).toBe(
+          'Prohibited keyword in request data: {"key":"constructor"}.'
+        );
+      });
+
+      it('denies _bsontype:Code nested inside a second sibling object', async () => {
+        const headers = {
+          'Content-Type': 'application/json',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        };
+        const response = await request({
+          headers,
+          method: 'POST',
+          url: 'http://localhost:8378/1/classes/Bypass',
+          body: JSON.stringify({
+            field1: { safe: true },
+            field2: { _bsontype: 'Code', code: 'malicious' },
+          }),
+        }).catch(e => e);
+        expect(response.status).toBe(400);
+        const text = JSON.parse(response.text);
+        expect(text.code).toBe(Parse.Error.INVALID_KEY_NAME);
+        expect(text.error).toBe(
+          'Prohibited keyword in request data: {"key":"_bsontype","value":"Code"}.'
+        );
+      });
+
+      it('handles circular references without infinite loop', () => {
+        const Utils = require('../lib/Utils');
+        const obj = { name: 'test', nested: { value: 1 } };
+        obj.nested.self = obj;
+        expect(Utils.objectContainsKeyValue(obj, 'nonexistent', undefined)).toBe(false);
+      });
+
+      it('denies _bsontype:Code in file metadata after a sibling nested object', async () => {
+        const str = 'Hello World!';
+        const data = [];
+        for (let i = 0; i < str.length; i++) {
+          data.push(str.charCodeAt(i));
+        }
+        const file = new Parse.File('hello.txt', data, 'text/plain');
+        file.addMetadata('nested', { safe: true });
+        file.addMetadata('_bsontype', 'Code');
+        file.addMetadata('code', 'malicious');
+        await expectAsync(file.save()).toBeRejectedWith(
+          new Parse.Error(
+            Parse.Error.INVALID_KEY_NAME,
+            'Prohibited keyword in request data: {"key":"_bsontype","value":"Code"}.'
+          )
+        );
+      });
+    });
+
     it('denies BSON type code data in write request by default', async () => {
       const headers = {
         'Content-Type': 'application/json',
