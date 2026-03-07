@@ -1307,6 +1307,185 @@ describe('read-only masterKey', () => {
     });
     expect(Array.isArray(res.data)).toBe(true);
   });
+
+  it('should throw when trying to delete a file with readOnlyMasterKey', async () => {
+    // Create a file with the real master key
+    const uploadRes = await request({
+      method: 'POST',
+      url: `${Parse.serverURL}/files/readonly-delete-test.txt`,
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': Parse.masterKey,
+        'Content-Type': 'text/plain',
+      },
+      body: 'file content',
+    });
+    const filename = uploadRes.data.name;
+    expect(filename).toBeDefined();
+
+    // Attempt delete with readOnlyMasterKey — should be rejected
+    loggerErrorSpy.calls.reset();
+    try {
+      await request({
+        method: 'DELETE',
+        url: `${Parse.serverURL}/files/${filename}`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Master-Key': 'read-only-test',
+        },
+      });
+      fail('should have thrown');
+    } catch (res) {
+      expect(res.status).toBe(403);
+      expect(res.data.error).toBe('Permission denied');
+    }
+
+    // Verify file still exists
+    const getRes = await request({ url: uploadRes.data.url });
+    expect(getRes.status).toBe(200);
+  });
+
+  it('should throw when trying to create a file with readOnlyMasterKey', async () => {
+    loggerErrorSpy.calls.reset();
+    try {
+      await request({
+        method: 'POST',
+        url: `${Parse.serverURL}/files/readonly-create-test.txt`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Master-Key': 'read-only-test',
+          'Content-Type': 'text/plain',
+        },
+        body: 'file content',
+      });
+      fail('should have thrown');
+    } catch (res) {
+      expect(res.status).toBe(403);
+      expect(res.data.error).toBe('Permission denied');
+    }
+  });
+
+  it('should throw when trying to loginAs with readOnlyMasterKey', async () => {
+    // Create a target user
+    await Parse.User.signUp('readonly-loginas-test', 'password123');
+    const userId = Parse.User.current().id;
+    await Parse.User.logOut();
+
+    // Attempt loginAs with readOnlyMasterKey — should be rejected
+    loggerErrorSpy.calls.reset();
+    try {
+      await request({
+        method: 'POST',
+        url: `${Parse.serverURL}/loginAs`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Master-Key': 'read-only-test',
+          'Content-Type': 'application/json',
+        },
+        body: { userId },
+      });
+      fail('should have thrown');
+    } catch (res) {
+      expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.data.error).toBe('Permission denied');
+    }
+  });
+
+  it('should expose isReadOnly in Cloud Function request when using readOnlyMasterKey', async () => {
+    let receivedMaster;
+    let receivedIsReadOnly;
+    Parse.Cloud.define('checkReadOnly', req => {
+      receivedMaster = req.master;
+      receivedIsReadOnly = req.isReadOnly;
+      return 'ok';
+    });
+
+    await request({
+      method: 'POST',
+      url: `${Parse.serverURL}/functions/checkReadOnly`,
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': 'read-only-test',
+        'Content-Type': 'application/json',
+      },
+      body: {},
+    });
+
+    expect(receivedMaster).toBe(true);
+    expect(receivedIsReadOnly).toBe(true);
+  });
+
+  it('should not set isReadOnly in Cloud Function request when using masterKey', async () => {
+    let receivedMaster;
+    let receivedIsReadOnly;
+    Parse.Cloud.define('checkNotReadOnly', req => {
+      receivedMaster = req.master;
+      receivedIsReadOnly = req.isReadOnly;
+      return 'ok';
+    });
+
+    await request({
+      method: 'POST',
+      url: `${Parse.serverURL}/functions/checkNotReadOnly`,
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': Parse.masterKey,
+        'Content-Type': 'application/json',
+      },
+      body: {},
+    });
+
+    expect(receivedMaster).toBe(true);
+    expect(receivedIsReadOnly).toBe(false);
+  });
+
+  it('should expose isReadOnly in beforeFind trigger when using readOnlyMasterKey', async () => {
+    let receivedMaster;
+    let receivedIsReadOnly;
+    Parse.Cloud.beforeFind('ReadOnlyTriggerTest', req => {
+      receivedMaster = req.master;
+      receivedIsReadOnly = req.isReadOnly;
+    });
+
+    const obj = new Parse.Object('ReadOnlyTriggerTest');
+    await obj.save(null, { useMasterKey: true });
+
+    await request({
+      method: 'GET',
+      url: `${Parse.serverURL}/classes/ReadOnlyTriggerTest`,
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': 'read-only-test',
+      },
+    });
+
+    expect(receivedMaster).toBe(true);
+    expect(receivedIsReadOnly).toBe(true);
+  });
+
+  it('should not set isReadOnly in beforeFind trigger when using masterKey', async () => {
+    let receivedMaster;
+    let receivedIsReadOnly;
+    Parse.Cloud.beforeFind('ReadOnlyTriggerTestNeg', req => {
+      receivedMaster = req.master;
+      receivedIsReadOnly = req.isReadOnly;
+    });
+
+    const obj = new Parse.Object('ReadOnlyTriggerTestNeg');
+    await obj.save(null, { useMasterKey: true });
+
+    await request({
+      method: 'GET',
+      url: `${Parse.serverURL}/classes/ReadOnlyTriggerTestNeg`,
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': Parse.masterKey,
+      },
+    });
+
+    expect(receivedMaster).toBe(true);
+    expect(receivedIsReadOnly).toBe(false);
+  });
 });
 
 describe('rest context', () => {

@@ -34,6 +34,9 @@ describe('Security Check Groups', () => {
       config.allowClientClassCreation = false;
       config.enableInsecureAuthAdapters = false;
       config.graphQLPublicIntrospection = false;
+      config.mountPlayground = false;
+      config.readOnlyMasterKey = 'someReadOnlyMasterKey';
+      config.readOnlyMasterKeyIps = ['127.0.0.1', '::1'];
       await reconfigureServer(config);
 
       const group = new CheckGroupServerConfig();
@@ -43,6 +46,8 @@ describe('Security Check Groups', () => {
       expect(group.checks()[2].checkState()).toBe(CheckState.success);
       expect(group.checks()[4].checkState()).toBe(CheckState.success);
       expect(group.checks()[5].checkState()).toBe(CheckState.success);
+      expect(group.checks()[6].checkState()).toBe(CheckState.success);
+      expect(group.checks()[8].checkState()).toBe(CheckState.success);
     });
 
     it('checks fail correctly', async () => {
@@ -51,6 +56,9 @@ describe('Security Check Groups', () => {
       config.allowClientClassCreation = true;
       config.enableInsecureAuthAdapters = true;
       config.graphQLPublicIntrospection = true;
+      config.mountPlayground = true;
+      config.readOnlyMasterKey = 'someReadOnlyMasterKey';
+      config.readOnlyMasterKeyIps = ['0.0.0.0/0'];
       await reconfigureServer(config);
 
       const group = new CheckGroupServerConfig();
@@ -60,6 +68,8 @@ describe('Security Check Groups', () => {
       expect(group.checks()[2].checkState()).toBe(CheckState.fail);
       expect(group.checks()[4].checkState()).toBe(CheckState.fail);
       expect(group.checks()[5].checkState()).toBe(CheckState.fail);
+      expect(group.checks()[6].checkState()).toBe(CheckState.fail);
+      expect(group.checks()[8].checkState()).toBe(CheckState.fail);
     });
 
     it_only_db('mongo')('checks succeed correctly (MongoDB specific)', async () => {
@@ -69,7 +79,7 @@ describe('Security Check Groups', () => {
 
       const group = new CheckGroupServerConfig();
       await group.run();
-      expect(group.checks()[6].checkState()).toBe(CheckState.success);
+      expect(group.checks()[7].checkState()).toBe(CheckState.success);
     });
 
     it_only_db('mongo')('checks fail correctly (MongoDB specific)', async () => {
@@ -79,7 +89,7 @@ describe('Security Check Groups', () => {
 
       const group = new CheckGroupServerConfig();
       await group.run();
-      expect(group.checks()[6].checkState()).toBe(CheckState.fail);
+      expect(group.checks()[7].checkState()).toBe(CheckState.fail);
     });
   });
 

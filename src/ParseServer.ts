@@ -9,6 +9,7 @@ var batch = require('./batch'),
   fs = require('fs');
 
 import { ParseServerOptions, LiveQueryServerOptions } from './Options';
+import { setRegexTimeout } from './LiveQuery/QueryTools';
 import defaults, { DatabaseOptionDefaults } from './defaults';
 import * as logging from './logger';
 import Config from './Config';
@@ -137,6 +138,8 @@ class ParseServer {
     this.config = Config.put(Object.assign({}, options, allControllers));
     this.config.masterKeyIpsStore = new Map();
     this.config.maintenanceKeyIpsStore = new Map();
+    this.config.readOnlyMasterKeyIpsStore = new Map();
+    setRegexTimeout(options.liveQuery?.regexTimeout);
     logging.setLogger(allControllers.loggerController);
   }
 
@@ -458,6 +461,9 @@ class ParseServer {
 
       if (options.mountPlayground) {
         parseGraphQLServer.applyPlayground(app);
+        logging.getLogger().warn(
+          'GraphQL Playground is deprecated and will be removed in a future version. It exposes the master key in the browser. Use Parse Dashboard as GraphQL IDE or configure a third-party GraphQL client with custom request headers.'
+        );
       }
     }
     const server = await new Promise(resolve => {

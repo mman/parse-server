@@ -98,6 +98,7 @@ export class FilesRouter {
 
     router.post(
       '/files/:filename',
+      this._earlyHeadersMiddleware(),
       this._bodyParsingMiddleware(maxUploadSize),
       Middlewares.handleParseHeaders,
       Middlewares.handleParseSession,
@@ -234,21 +235,77 @@ export class FilesRouter {
     }
   }
 
-  _bodyParsingMiddleware(maxUploadSize) {
-    const rawParser = express.raw({
-      type: () => true,
-      limit: maxUploadSize,
-    });
-    return (req, res, next) => {
-      if (req.get('X-Parse-Upload-Mode') === 'stream') {
-        req._maxUploadSizeBytes = Utils.parseSizeToBytes(maxUploadSize);
+  /**
+   * Middleware that runs before body parsing to handle headers that must be
+   * resolved before the request body is consumed. Currently supports:
+   *
+   * - `X-Parse-File-Max-Upload-Size`: Overrides the server-wide `maxUploadSize`
+   *   for this request. Requires the master key. The value uses the same format
+   *   as the server option (e.g. `'50mb'`, `'1gb'`). Sets `req._maxUploadSizeOverride`
+   *   (in bytes) for `_bodyParsingMiddleware` to use.
+   */
+  _earlyHeadersMiddleware() {
+    return async (req, res, next) => {
+      const maxUploadSizeOverride = req.get('X-Parse-File-Max-Upload-Size');
+      if (!maxUploadSizeOverride) {
         return next();
       }
-      return rawParser(req, res, next);
+      const appId = req.get('X-Parse-Application-Id');
+      const config = Config.get(appId);
+      if (!config) {
+        const error = createSanitizedHttpError(403, 'Invalid application ID.', undefined);
+        res.status(error.status);
+        res.json({ error: error.message });
+        return;
+      }
+      const masterKey = await config.loadMasterKey();
+      if (req.get('X-Parse-Master-Key') !== masterKey) {
+        const error = createSanitizedHttpError(403, 'unauthorized: master key is required', config);
+        res.status(error.status);
+        res.json({ error: error.message });
+        return;
+      }
+      if (config.masterKeyIps?.length && !Middlewares.checkIp(req.ip, config.masterKeyIps, config.masterKeyIpsStore)) {
+        const error = createSanitizedHttpError(403, 'unauthorized: master key is required', config);
+        res.status(error.status);
+        res.json({ error: error.message });
+        return;
+      }
+      let parsedBytes;
+      try {
+        parsedBytes = Utils.parseSizeToBytes(maxUploadSizeOverride);
+      } catch {
+        return next(
+          new Parse.Error(
+            Parse.Error.FILE_SAVE_ERROR,
+            `Invalid maxUploadSize override value: ${maxUploadSizeOverride}`
+          )
+        );
+      }
+      req._maxUploadSizeOverride = parsedBytes;
+      next();
+    };
+  }
+
+  _bodyParsingMiddleware(maxUploadSize) {
+    const defaultMaxBytes = Utils.parseSizeToBytes(maxUploadSize);
+    return (req, res, next) => {
+      if (req.get('X-Parse-Upload-Mode') === 'stream') {
+        req._maxUploadSizeBytes = req._maxUploadSizeOverride ?? defaultMaxBytes;
+        return next();
+      }
+      const limit = req._maxUploadSizeOverride ?? maxUploadSize;
+      return express.raw({ type: () => true, limit })(req, res, next);
     };
   }
 
   async createHandler(req, res, next) {
+    if (req.auth.isReadOnly) {
+      const error = createSanitizedHttpError(403, "read-only masterKey isn't allowed to create a file.", req.config);
+      res.status(error.status);
+      res.end(`{"error":"${error.message}"}`);
+      return;
+    }
     const config = req.config;
     const user = req.auth.user;
     const isMaster = req.auth.isMaster;
@@ -311,6 +368,38 @@ export class FilesRouter {
           )
         );
         return;
+      }
+    }
+
+    // For streaming uploads, read file data from headers since the body is the raw stream
+    if (req.get('X-Parse-Upload-Mode') === 'stream') {
+      req.fileData = {};
+      if (req.get('X-Parse-File-Directory')) {
+        req.fileData.directory = req.get('X-Parse-File-Directory');
+      }
+      if (req.get('X-Parse-File-Metadata')) {
+        try {
+          const parsed = JSON.parse(req.get('X-Parse-File-Metadata'));
+          if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+            throw new Error();
+          }
+          req.fileData.metadata = parsed;
+        } catch {
+          next(new Parse.Error(Parse.Error.INVALID_JSON, 'Invalid JSON in X-Parse-File-Metadata header.'));
+          return;
+        }
+      }
+      if (req.get('X-Parse-File-Tags')) {
+        try {
+          const parsed = JSON.parse(req.get('X-Parse-File-Tags'));
+          if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+            throw new Error();
+          }
+          req.fileData.tags = parsed;
+        } catch {
+          next(new Parse.Error(Parse.Error.INVALID_JSON, 'Invalid JSON in X-Parse-File-Tags header.'));
+          return;
+        }
       }
     }
 
@@ -584,6 +673,12 @@ export class FilesRouter {
   }
 
   async deleteHandler(req, res, next) {
+    if (req.auth.isReadOnly) {
+      const error = createSanitizedHttpError(403, "read-only masterKey isn't allowed to delete a file.", req.config);
+      res.status(error.status);
+      res.end(`{"error":"${error.message}"}`);
+      return;
+    }
     try {
       const { filesController } = req.config;
       const filename = FilesRouter._getFilenameFromParams(req);
@@ -622,14 +717,45 @@ export class FilesRouter {
   async metadataHandler(req, res) {
     try {
       const config = Config.get(req.params.appId);
+      if (!config) {
+        res.status(200);
+        res.json({});
+        return;
+      }
       const { filesController } = config;
-      const filename = FilesRouter._getFilenameFromParams(req);
-      const data = await filesController.getMetadata(filename);
+      let filename = FilesRouter._getFilenameFromParams(req);
+      const file = new Parse.File(filename, { base64: '' });
+      const triggerResult = await triggers.maybeRunFileTrigger(
+        triggers.Types.beforeFind,
+        { file },
+        config,
+        req.auth
+      );
+      if (triggerResult?.file?._name) {
+        filename = triggerResult.file._name;
+      }
+      const data = await filesController.getMetadata(filename).catch(() => {
+        res.status(200);
+        res.json({});
+      });
+      if (!data) {
+        return;
+      }
+      await triggers.maybeRunFileTrigger(
+        triggers.Types.afterFind,
+        { file },
+        config,
+        req.auth
+      );
       res.status(200);
       res.json(data);
-    } catch {
-      res.status(200);
-      res.json({});
+    } catch (e) {
+      const err = triggers.resolveError(e, {
+        code: Parse.Error.SCRIPT_FAILED,
+        message: 'Could not get file metadata.',
+      });
+      res.status(403);
+      res.json({ code: err.code, error: err.message });
     }
   }
 }

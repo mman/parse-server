@@ -47,6 +47,35 @@ describe('Vulnerabilities', () => {
         ).toBeRejectedWith(new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Invalid object ID.'));
         await new Parse.Query(Parse.User).find({ sessionToken: innocentUser.getSessionToken() });
       });
+
+    });
+
+    describe('legacy session upgrade for user with poisoned object ID', () => {
+      // Legacy session tokens (_session_token on _User) are a MongoDB-only legacy feature
+      it_only_db('mongo')('refuses legacy session upgrade for user with poisoned object ID', async () => {
+        const parseServer = await global.reconfigureServer();
+        const databaseController = parseServer.config.databaseController;
+        const poisonedId = 'role:legacy';
+        const legacyToken = 'legacy-poisoned-token';
+        // Create user with poisoned ID and legacy session token directly in DB
+        await databaseController.create('_User', {
+          objectId: poisonedId,
+          _session_token: legacyToken,
+        });
+        await expectAsync(
+          request({
+            method: 'POST',
+            url: 'http://localhost:8378/1/upgradeToRevocableSession',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Parse-Application-Id': 'test',
+              'X-Parse-REST-API-Key': 'rest',
+              'X-Parse-Session-Token': legacyToken,
+            },
+            body: JSON.stringify({}),
+          })
+        ).toBeRejected();
+      });
     });
   });
 
@@ -478,6 +507,75 @@ describe('Vulnerabilities', () => {
   });
 });
 
+describe('Malformed $regex information disclosure', () => {
+  it('should not leak database error internals for invalid regex pattern in class query', async () => {
+    const logger = require('../lib/logger').default;
+    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
+    const obj = new Parse.Object('TestObject');
+    await obj.save({ field: 'value' });
+
+    try {
+      await request({
+        method: 'GET',
+        url: `http://localhost:8378/1/classes/TestObject`,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        qs: {
+          where: JSON.stringify({ field: { $regex: '[abc' } }),
+        },
+      });
+      fail('Request should have failed');
+    } catch (e) {
+      expect(e.data.code).toBe(Parse.Error.INTERNAL_SERVER_ERROR);
+      expect(e.data.error).toBe('An internal server error occurred');
+      expect(typeof e.data.error).toBe('string');
+      expect(JSON.stringify(e.data)).not.toContain('errmsg');
+      expect(JSON.stringify(e.data)).not.toContain('codeName');
+      expect(JSON.stringify(e.data)).not.toContain('errorResponse');
+      expect(loggerErrorSpy).toHaveBeenCalledWith(
+        'Sanitized error:',
+        jasmine.stringMatching(/[Rr]egular expression/i)
+      );
+    }
+  });
+
+  it('should not leak database error internals for invalid regex pattern in role query', async () => {
+    const logger = require('../lib/logger').default;
+    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
+    const role = new Parse.Role('testrole', new Parse.ACL());
+    await role.save(null, { useMasterKey: true });
+    try {
+      await request({
+        method: 'GET',
+        url: `http://localhost:8378/1/roles`,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        qs: {
+          where: JSON.stringify({ name: { $regex: '[abc' } }),
+        },
+      });
+      fail('Request should have failed');
+    } catch (e) {
+      expect(e.data.code).toBe(Parse.Error.INTERNAL_SERVER_ERROR);
+      expect(e.data.error).toBe('An internal server error occurred');
+      expect(typeof e.data.error).toBe('string');
+      expect(JSON.stringify(e.data)).not.toContain('errmsg');
+      expect(JSON.stringify(e.data)).not.toContain('codeName');
+      expect(JSON.stringify(e.data)).not.toContain('errorResponse');
+      expect(loggerErrorSpy).toHaveBeenCalledWith(
+        'Sanitized error:',
+        jasmine.stringMatching(/[Rr]egular expression/i)
+      );
+    }
+  });
+});
+
 describe('Postgres regex sanitizater', () => {
   it('sanitizes the regex correctly to prevent Injection', async () => {
     const user = new Parse.User();
@@ -500,5 +598,43 @@ describe('Postgres regex sanitizater', () => {
     expect(response.status).toBe(200);
     expect(response.data.results).toEqual(jasmine.any(Array));
     expect(response.data.results.length).toBe(0);
+  });
+});
+
+describe('(GHSA-mf3j-86qx-cq5j) ReDoS via $regex in LiveQuery subscription', () => {
+  it('does not block event loop with catastrophic backtracking regex in LiveQuery', async () => {
+    await reconfigureServer({
+      liveQuery: { classNames: ['TestObject'] },
+      startLiveQueryServer: true,
+    });
+    const client = new Parse.LiveQueryClient({
+      applicationId: 'test',
+      serverURL: 'ws://localhost:1337',
+      javascriptKey: 'test',
+    });
+    client.open();
+    const query = new Parse.Query('TestObject');
+    // Set a catastrophic backtracking regex pattern directly
+    query._addCondition('field', '$regex', '(a+)+b');
+    const subscription = await client.subscribe(query);
+    // Create an object that would trigger regex evaluation
+    const obj = new Parse.Object('TestObject');
+    // With 30 'a's followed by 'c', an unprotected regex would hang for seconds
+    obj.set('field', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaac');
+    // Set a timeout to detect if the event loop is blocked
+    const timeout = 5000;
+    const start = Date.now();
+    const savePromise = obj.save();
+    const eventPromise = new Promise(resolve => {
+      subscription.on('create', () => resolve('matched'));
+      setTimeout(() => resolve('timeout'), timeout);
+    });
+    await savePromise;
+    const result = await eventPromise;
+    const elapsed = Date.now() - start;
+    // The regex should be rejected (not match), and the operation should complete quickly
+    expect(result).toBe('timeout');
+    expect(elapsed).toBeLessThan(timeout + 1000);
+    client.close();
   });
 });

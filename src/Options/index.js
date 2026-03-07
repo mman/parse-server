@@ -82,6 +82,9 @@ export interface ParseServerOptions {
   /* (Optional) Restricts the use of maintenance key permissions to a list of IP addresses or ranges.<br><br>This option accepts a list of single IP addresses, for example `['10.0.0.1', '10.0.0.2']`. You can also use CIDR notation to specify an IP address range, for example `['10.0.1.0/24']`.<br><br><b>Special scenarios:</b><br>- Setting an empty array `[]` means that the maintenance key cannot be used even in Parse Server Cloud Code. This value cannot be set via an environment variable as there is no way to pass an empty array to Parse Server via an environment variable.<br>- Setting `['0.0.0.0/0', '::0']` means to allow any IPv4 and IPv6 address to use the maintenance key and effectively disables the IP filter.<br><br><b>Considerations:</b><br>- IPv4 and IPv6 addresses are not compared against each other. Each IP version (IPv4 and IPv6) needs to be considered separately. For example, `['0.0.0.0/0']` allows any IPv4 address and blocks every IPv6 address. Conversely, `['::0']` allows any IPv6 address and blocks every IPv4 address.<br>- Keep in mind that the IP version in use depends on the network stack of the environment in which Parse Server runs. A local environment may use a different IP version than a remote environment. For example, it's possible that locally the value `['0.0.0.0/0']` allows the request IP because the environment is using IPv4, but when Parse Server is deployed remotely the request IP is blocked because the remote environment is using IPv6.<br>- When setting the option via an environment variable the notation is a comma-separated string, for example `"0.0.0.0/0,::0"`.<br>- IPv6 zone indices (`%` suffix) are not supported, for example `fe80::1%eth0`, `fe80::1%1` or `::1%lo`.<br><br>Defaults to `['127.0.0.1', '::1']` which means that only `localhost`, the server instance on which Parse Server runs, is allowed to use the maintenance key.
   :DEFAULT: ["127.0.0.1","::1"] */
   maintenanceKeyIps: ?(string[]);
+  /* (Optional) Restricts the use of read-only master key permissions to a list of IP addresses or ranges.<br><br>This option accepts a list of single IP addresses, for example `['10.0.0.1', '10.0.0.2']`. You can also use CIDR notation to specify an IP address range, for example `['10.0.1.0/24']`.<br><br><b>Special scenarios:</b><br>- Setting an empty array `[]` means that the read-only master key cannot be used even in Parse Server Cloud Code. This value cannot be set via an environment variable as there is no way to pass an empty array to Parse Server via an environment variable.<br>- Setting `['0.0.0.0/0', '::0']` means to allow any IPv4 and IPv6 address to use the read-only master key and effectively disables the IP filter.<br><br><b>Considerations:</b><br>- IPv4 and IPv6 addresses are not compared against each other. Each IP version (IPv4 and IPv6) needs to be considered separately. For example, `['0.0.0.0/0']` allows any IPv4 address and blocks every IPv6 address. Conversely, `['::0']` allows any IPv6 address and blocks every IPv4 address.<br>- Keep in mind that the IP version in use depends on the network stack of the environment in which Parse Server runs. A local environment may use a different IP version than a remote environment. For example, it's possible that locally the value `['0.0.0.0/0']` allows the request IP because the environment is using IPv4, but when Parse Server is deployed remotely the request IP is blocked because the remote environment is using IPv6.<br>- When setting the option via an environment variable the notation is a comma-separated string, for example `"0.0.0.0/0,::0"`.<br>- IPv6 zone indices (`%` suffix) are not supported, for example `fe80::1%eth0`, `fe80::1%1` or `::1%lo`.<br><br>Defaults to `['0.0.0.0/0', '::0']` which means that any IP address is allowed to use the read-only master key. It is recommended to set this option to `['127.0.0.1', '::1']` to restrict access to `localhost`.
+  :DEFAULT: ["0.0.0.0/0","::0"] */
+  readOnlyMasterKeyIps: ?(string[]);
   /* Sets the app name */
   appName: ?string;
   /* Add headers to Access-Control-Allow-Headers */
@@ -339,11 +342,11 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_GRAPHQL_PUBLIC_INTROSPECTION
   :DEFAULT: false */
   graphQLPublicIntrospection: ?boolean;
-  /* Mounts the GraphQL Playground - never use this option in production
+  /* Deprecated. Mounts the GraphQL Playground which is deprecated and will be removed in a future version. The playground exposes the master key in the browser. Use Parse Dashboard as GraphQL IDE or configure a third-party GraphQL client with custom request headers.
   :ENV: PARSE_SERVER_MOUNT_PLAYGROUND
   :DEFAULT: false */
   mountPlayground: ?boolean;
-  /* Mount path for the GraphQL Playground, defaults to /playground
+  /* Deprecated. Mount path for the GraphQL Playground. The playground is deprecated and will be removed in a future version.
   :ENV: PARSE_SERVER_PLAYGROUND_PATH
   :DEFAULT: /playground */
   playgroundPath: ?string;
@@ -511,6 +514,9 @@ export interface LiveQueryOptions {
   redisURL: ?string;
   /* LiveQuery pubsub adapter */
   pubSubAdapter: ?Adapter<PubSubAdapter>;
+  /* Sets the maximum execution time in milliseconds for regular expression pattern matching in LiveQuery. This protects against Regular Expression Denial of Service (ReDoS) attacks where a malicious regex pattern could block the event loop. A regex that exceeds the timeout will be treated as non-matching.<br><br>The protection runs each regex evaluation in an isolated VM context with a timeout. This adds approximately 50 microseconds of overhead per regex evaluation. For most applications this is negligible, but it can add up if you have a very large number of LiveQuery subscriptions that use `$regex` on the same class. For example, 10,000 concurrent regex subscriptions would add approximately 500ms of processing time per object save event on that class.<br><br>Set to `0` to disable the timeout and use native regex evaluation without protection. Defaults to `100`.
+  :DEFAULT: 100 */
+  regexTimeout: ?number;
   /* Adapter module for the WebSocketServer */
   wssAdapter: ?Adapter<WSSAdapter>;
 }

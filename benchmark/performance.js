@@ -23,6 +23,7 @@ const LOG_ITERATIONS = false;
 
 // Parse Server instance
 let parseServer;
+let httpServer;
 let mongoClient;
 let core;
 
@@ -48,6 +49,7 @@ async function initializeParseServer() {
     allowClientClassCreation: true,
     logLevel: 'error', // Minimal logging for performance
     verbose: false,
+    liveQuery: { classNames: ['BenchmarkLiveQuery'] },
   });
 
   app.use('/parse', parseServer.app);
@@ -193,6 +195,105 @@ async function measureOperation({ name, operation, iterations, skipWarmup = fals
       logInfo('Removed artificial DB latency');
     }
   }
+}
+
+/**
+ * Measure GC pressure for an async operation over multiple iterations.
+ * Tracks garbage collection duration per operation using PerformanceObserver.
+ * Larger transient allocations (e.g., from unbounded cursor batch sizes) cause
+ * more frequent and longer GC pauses, which this metric directly captures.
+ * @param {Object} options Measurement options.
+ * @param {string} options.name Name of the operation being measured.
+ * @param {Function} options.operation Async function to measure.
+ * @param {number} options.iterations Number of iterations to run.
+ * @param {boolean} [options.skipWarmup=false] Skip warmup phase.
+ */
+async function measureMemoryOperation({ name, operation, iterations, skipWarmup = false }) {
+  const { PerformanceObserver } = require('node:perf_hooks');
+
+  // Override iterations if global ITERATIONS is set
+  iterations = ITERATIONS || iterations;
+
+  // Determine warmup count (20% of iterations)
+  const warmupCount = skipWarmup ? 0 : Math.floor(iterations * 0.2);
+  const gcDurations = [];
+
+  if (warmupCount > 0) {
+    logInfo(`Starting warmup phase of ${warmupCount} iterations...`);
+    for (let i = 0; i < warmupCount; i++) {
+      await operation();
+    }
+    logInfo('Warmup complete.');
+  }
+
+  // Measurement phase
+  logInfo(`Starting measurement phase of ${iterations} iterations...`);
+  const progressInterval = Math.ceil(iterations / 10);
+
+  for (let i = 0; i < iterations; i++) {
+    // Force GC before each iteration to start from a clean state
+    if (typeof global.gc === 'function') {
+      global.gc();
+    }
+
+    // Track GC events during this iteration; measure the longest single GC pause,
+    // which reflects the production impact of large transient allocations
+    let maxGcPause = 0;
+    const obs = new PerformanceObserver((list) => {
+      for (const entry of list.getEntries()) {
+        if (entry.duration > maxGcPause) {
+          maxGcPause = entry.duration;
+        }
+      }
+    });
+    obs.observe({ type: 'gc', buffered: false });
+
+    await operation();
+
+    // Flush any buffered entries before disconnecting to avoid data loss
+    for (const entry of obs.takeRecords()) {
+      if (entry.duration > maxGcPause) {
+        maxGcPause = entry.duration;
+      }
+    }
+    obs.disconnect();
+    gcDurations.push(maxGcPause);
+
+    if (LOG_ITERATIONS) {
+      logInfo(`Iteration ${i + 1}: ${maxGcPause.toFixed(2)} ms GC`);
+    } else if ((i + 1) % progressInterval === 0 || i + 1 === iterations) {
+      const progress = Math.round(((i + 1) / iterations) * 100);
+      logInfo(`Progress: ${progress}%`);
+    }
+  }
+
+  // Sort for percentile calculations
+  gcDurations.sort((a, b) => a - b);
+
+  // Filter outliers using IQR method
+  const q1Index = Math.floor(gcDurations.length * 0.25);
+  const q3Index = Math.floor(gcDurations.length * 0.75);
+  const q1 = gcDurations[q1Index];
+  const q3 = gcDurations[q3Index];
+  const iqr = q3 - q1;
+  const lowerBound = q1 - 1.5 * iqr;
+  const upperBound = q3 + 1.5 * iqr;
+
+  const filtered = gcDurations.filter(d => d >= lowerBound && d <= upperBound);
+
+  const median = filtered[Math.floor(filtered.length * 0.5)];
+  const p95 = filtered[Math.floor(filtered.length * 0.95)];
+  const p99 = filtered[Math.floor(filtered.length * 0.99)];
+  const min = filtered[0];
+  const max = filtered[filtered.length - 1];
+
+  return {
+    name,
+    value: median,
+    unit: 'ms',
+    range: `${min.toFixed(2)} - ${max.toFixed(2)}`,
+    extra: `p95: ${p95.toFixed(2)}ms, p99: ${p99.toFixed(2)}ms, n=${filtered.length}/${gcDurations.length}`,
+  };
 }
 
 /**
@@ -526,6 +627,171 @@ async function benchmarkQueryWithIncludeNested(name) {
 }
 
 /**
+ * Benchmark: Large Result Set GC Pressure
+ * Measures max GC pause when querying many large documents, which is affected
+ * by MongoDB cursor batch size configuration. Without a batch size limit,
+ * the driver processes larger data chunks between yield points, creating more
+ * garbage that triggers longer GC pauses.
+ */
+async function benchmarkLargeResultMemory(name) {
+  const TestObject = Parse.Object.extend('BenchmarkLargeResult');
+  const TOTAL_OBJECTS = 3_000;
+  const SAVE_BATCH_SIZE = 200;
+
+  // Seed data in batches; ~8 KB per document so 3,000 docs ≈ 24 MB total,
+  // exceeding MongoDB's 16 MiB default batch limit to test cursor batching
+  for (let i = 0; i < TOTAL_OBJECTS; i += SAVE_BATCH_SIZE) {
+    const batch = [];
+    for (let j = 0; j < SAVE_BATCH_SIZE && i + j < TOTAL_OBJECTS; j++) {
+      const obj = new TestObject();
+      obj.set('category', (i + j) % 10);
+      obj.set('value', i + j);
+      obj.set('data', `padding-${i + j}-${'x'.repeat(8000)}`);
+      batch.push(obj);
+    }
+    await Parse.Object.saveAll(batch);
+  }
+
+  return measureMemoryOperation({
+    name,
+    iterations: 100,
+    operation: async () => {
+      const query = new Parse.Query('BenchmarkLargeResult');
+      query.limit(TOTAL_OBJECTS);
+      await query.find({ useMasterKey: true });
+    },
+  });
+}
+
+/**
+ * Benchmark: Concurrent Query GC Pressure
+ * Measures max GC pause under concurrent load with large result sets.
+ * Simulates production conditions where multiple clients query simultaneously,
+ * compounding GC pressure from cursor batch sizes.
+ */
+async function benchmarkConcurrentQueryMemory(name) {
+  const TestObject = Parse.Object.extend('BenchmarkConcurrentResult');
+  const TOTAL_OBJECTS = 3_000;
+  const SAVE_BATCH_SIZE = 200;
+  const CONCURRENT_QUERIES = 10;
+
+  // Seed data in batches; ~8 KB per document so 3,000 docs ≈ 24 MB total,
+  // exceeding MongoDB's 16 MiB default batch limit to test cursor batching
+  for (let i = 0; i < TOTAL_OBJECTS; i += SAVE_BATCH_SIZE) {
+    const batch = [];
+    for (let j = 0; j < SAVE_BATCH_SIZE && i + j < TOTAL_OBJECTS; j++) {
+      const obj = new TestObject();
+      obj.set('category', (i + j) % 10);
+      obj.set('value', i + j);
+      obj.set('data', `padding-${i + j}-${'x'.repeat(8000)}`);
+      batch.push(obj);
+    }
+    await Parse.Object.saveAll(batch);
+  }
+
+  return measureMemoryOperation({
+    name,
+    iterations: 50,
+    operation: async () => {
+      const queries = [];
+      for (let i = 0; i < CONCURRENT_QUERIES; i++) {
+        const query = new Parse.Query('BenchmarkConcurrentResult');
+        query.limit(TOTAL_OBJECTS);
+        queries.push(query.find({ useMasterKey: true }));
+      }
+      await Promise.all(queries);
+    },
+  });
+}
+
+/**
+ * Benchmark: Query $regex
+ *
+ * Measures a standard Parse.Query.find() with a $regex constraint.
+ * Each iteration uses a different regex to avoid database query cache hits.
+ */
+async function benchmarkQueryRegex(name) {
+  // Seed objects that will match the various regex patterns
+  const objects = [];
+  for (let i = 0; i < 1_000; i++) {
+    const obj = new Parse.Object('BenchmarkRegex');
+    obj.set('field', `BenchRegex_${i} data`);
+    objects.push(obj);
+  }
+  await Parse.Object.saveAll(objects);
+
+  let counter = 0;
+
+  const bases = ['^BenchRegex_', 'BenchRegex_', '[a-z]+_'];
+
+  return measureOperation({
+    name,
+    iterations: 1_000,
+    operation: async () => {
+      const idx = counter++;
+      const regex = bases[idx % bases.length] + idx;
+      const query = new Parse.Query('BenchmarkRegex');
+      query._addCondition('field', '$regex', regex);
+      await query.find();
+    },
+  });
+}
+
+/**
+ * Benchmark: LiveQuery $regex end-to-end
+ *
+ * Measures the full round-trip of a LiveQuery subscription with a $regex constraint:
+ * subscribe with a unique regex pattern, save an object that matches, and measure
+ * the time until the LiveQuery event fires. Each iteration uses a different regex
+ * to avoid cache hits on the RE2JS compile step.
+ */
+async function benchmarkLiveQueryRegex(name) {
+  // Enable LiveQuery on the running server
+  const { default: ParseServer } = require('../lib/index.js');
+  const liveQueryServer = await ParseServer.createLiveQueryServer(httpServer, {
+    appId: APP_ID,
+    masterKey: MASTER_KEY,
+    serverURL: SERVER_URL,
+  });
+  Parse.liveQueryServerURL = 'ws://localhost:1337';
+
+  let counter = 0;
+
+  // Cycle through different regex patterns to avoid RE2JS cache hits
+  const patterns = [
+    { base: '^BenchLQ_', fieldValue: i => `BenchLQ_${i} data` },
+    { base: 'benchfield_', fieldValue: i => `some benchfield_${i} here` },
+    { base: '[a-z]+_benchclass_', fieldValue: i => `abc_benchclass_${i}` },
+  ];
+
+  try {
+    return await measureOperation({
+      name,
+      iterations: 500,
+      operation: async () => {
+        const idx = counter++;
+        const pattern = patterns[idx % patterns.length];
+        const regex = pattern.base + idx;
+        const query = new Parse.Query('BenchmarkLiveQuery');
+        query._addCondition('field', '$regex', regex);
+        const subscription = await query.subscribe();
+        const eventPromise = new Promise(resolve => {
+          subscription.on('create', () => resolve());
+        });
+        const obj = new Parse.Object('BenchmarkLiveQuery');
+        obj.set('field', pattern.fieldValue(idx));
+        await obj.save();
+        await eventPromise;
+        subscription.unsubscribe();
+      },
+    });
+  } finally {
+    await liveQueryServer.shutdown();
+    Parse.liveQueryServerURL = undefined;
+  }
+}
+
+/**
  * Run all benchmarks
  */
 async function runBenchmarks() {
@@ -538,6 +804,7 @@ async function runBenchmarks() {
     // Initialize Parse Server
     logInfo('Initializing Parse Server...');
     server = await initializeParseServer();
+    httpServer = server;
 
     // Wait for server to be ready
     await new Promise(resolve => setTimeout(resolve, 2000));
@@ -555,6 +822,10 @@ async function runBenchmarks() {
       { name: 'User.login', fn: benchmarkUserLogin },
       { name: 'Query.include (parallel pointers)', fn: benchmarkQueryWithIncludeParallel },
       { name: 'Query.include (nested pointers)', fn: benchmarkQueryWithIncludeNested },
+      { name: 'Query.find (large result, GC pressure)', fn: benchmarkLargeResultMemory },
+      { name: 'Query.find (concurrent, GC pressure)', fn: benchmarkConcurrentQueryMemory },
+      { name: 'Query $regex', fn: benchmarkQueryRegex },
+      { name: 'LiveQuery $regex', fn: benchmarkLiveQueryRegex },
     ];
 
     // Run each benchmark with database cleanup
