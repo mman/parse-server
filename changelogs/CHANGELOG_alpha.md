@@ -1,3 +1,10 @@
+## [9.5.2-alpha.5](https://github.com/parse-community/parse-server/compare/9.5.2-alpha.4...9.5.2-alpha.5) (2026-03-08)
+
+
+### Bug Fixes
+
+* Missing audience validation in Keycloak authentication adapter ([GHSA-48mh-j4p5-7j9v](https://github.com/parse-community/parse-server/security/advisories/GHSA-48mh-j4p5-7j9v)) ([#10137](https://github.com/parse-community/parse-server/issues/10137)) ([78ef1a1](https://github.com/parse-community/parse-server/commit/78ef1a175d3b8da83d33fd5c69830b12d366212f))
+
 ## [9.5.2-alpha.4](https://github.com/parse-community/parse-server/compare/9.5.2-alpha.3...9.5.2-alpha.4) (2026-03-08)
 
 
