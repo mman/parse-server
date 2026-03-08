@@ -1,3 +1,10 @@
+## [9.5.2-alpha.4](https://github.com/parse-community/parse-server/compare/9.5.2-alpha.3...9.5.2-alpha.4) (2026-03-08)
+
+
+### Bug Fixes
+
+* Stored cross-site scripting (XSS) via SVG file upload ([GHSA-hcj7-6gxh-24ww](https://github.com/parse-community/parse-server/security/advisories/GHSA-hcj7-6gxh-24ww)) ([#10136](https://github.com/parse-community/parse-server/issues/10136)) ([93b784d](https://github.com/parse-community/parse-server/commit/93b784d21a8be13c6db1e8f0baeb0feda1fe12be))
+
 ## [9.5.2-alpha.3](https://github.com/parse-community/parse-server/compare/9.5.2-alpha.2...9.5.2-alpha.3) (2026-03-08)
 
 
