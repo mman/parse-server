@@ -1,3 +1,10 @@
+## [9.5.2-alpha.3](https://github.com/parse-community/parse-server/compare/9.5.2-alpha.2...9.5.2-alpha.3) (2026-03-08)
+
+
+### Bug Fixes
+
+* Bypass of class-level permissions in LiveQuery ([GHSA-7ch5-98q2-7289](https://github.com/parse-community/parse-server/security/advisories/GHSA-7ch5-98q2-7289)) ([#10133](https://github.com/parse-community/parse-server/issues/10133)) ([98188d9](https://github.com/parse-community/parse-server/commit/98188d92c0b05ef498fa066588da1740de047bde))
+
 ## [9.5.2-alpha.2](https://github.com/parse-community/parse-server/compare/9.5.2-alpha.1...9.5.2-alpha.2) (2026-03-07)
 
 
