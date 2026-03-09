@@ -1,3 +1,10 @@
+## [9.5.2-alpha.12](https://github.com/parse-community/parse-server/compare/9.5.2-alpha.11...9.5.2-alpha.12) (2026-03-09)
+
+
+### Bug Fixes
+
+* Classes `_GraphQLConfig` and `_Audience` master key bypass via generic class routes ([GHSA-7xg7-rqf6-pw6c](https://github.com/parse-community/parse-server/security/advisories/GHSA-7xg7-rqf6-pw6c)) ([#10151](https://github.com/parse-community/parse-server/issues/10151)) ([1de4e43](https://github.com/parse-community/parse-server/commit/1de4e43ca2c894f1c0c1ca5611f5b491e8d24d40))
+
 ## [9.5.2-alpha.11](https://github.com/parse-community/parse-server/compare/9.5.2-alpha.10...9.5.2-alpha.11) (2026-03-09)
 
 
