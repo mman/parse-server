@@ -1,3 +1,10 @@
+## [9.5.2-alpha.11](https://github.com/parse-community/parse-server/compare/9.5.2-alpha.10...9.5.2-alpha.11) (2026-03-09)
+
+
+### Bug Fixes
+
+* Concurrent signup with same authentication creates duplicate users ([#10149](https://github.com/parse-community/parse-server/issues/10149)) ([853bfe1](https://github.com/parse-community/parse-server/commit/853bfe1bd3b104aefbcf87cf0cac391c9772ab9d))
+
 ## [9.5.2-alpha.10](https://github.com/parse-community/parse-server/compare/9.5.2-alpha.9...9.5.2-alpha.10) (2026-03-08)
 
 
