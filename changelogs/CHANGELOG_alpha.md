@@ -1,3 +1,10 @@
+## [9.5.2-alpha.13](https://github.com/parse-community/parse-server/compare/9.5.2-alpha.12...9.5.2-alpha.13) (2026-03-09)
+
+
+### Bug Fixes
+
+* LDAP injection via unsanitized user input in DN and group filter construction ([GHSA-7m6r-fhh7-r47c](https://github.com/parse-community/parse-server/security/advisories/GHSA-7m6r-fhh7-r47c)) ([#10154](https://github.com/parse-community/parse-server/issues/10154)) ([5bbca7b](https://github.com/parse-community/parse-server/commit/5bbca7b862840909bb130920c33794abebbc15d4))
+
 ## [9.5.2-alpha.12](https://github.com/parse-community/parse-server/compare/9.5.2-alpha.11...9.5.2-alpha.12) (2026-03-09)
 
 
