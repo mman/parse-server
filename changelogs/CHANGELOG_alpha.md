@@ -1,3 +1,10 @@
+# [9.6.0-alpha.1](https://github.com/parse-community/parse-server/compare/9.5.2-alpha.14...9.6.0-alpha.1) (2026-03-09)
+
+
+### Features
+
+* Add `X-Content-Type-Options: nosniff` header and customizable response headers for files via `Parse.Cloud.afterFind(Parse.File)` ([#10158](https://github.com/parse-community/parse-server/issues/10158)) ([28d11a3](https://github.com/parse-community/parse-server/commit/28d11a33bcdb0f89604e2289018a6f4729d4ba67))
+
 ## [9.5.2-alpha.14](https://github.com/parse-community/parse-server/compare/9.5.2-alpha.13...9.5.2-alpha.14) (2026-03-09)
 
 
