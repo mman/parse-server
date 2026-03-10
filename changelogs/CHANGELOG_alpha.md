@@ -1,3 +1,10 @@
+# [9.6.0-alpha.8](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.7...9.6.0-alpha.8) (2026-03-10)
+
+
+### Bug Fixes
+
+* User enumeration via email verification endpoint ([GHSA-w54v-hf9p-8856](https://github.com/parse-community/parse-server/security/advisories/GHSA-w54v-hf9p-8856)) ([#10172](https://github.com/parse-community/parse-server/issues/10172)) ([936abd4](https://github.com/parse-community/parse-server/commit/936abd4905e501838e8d46503da66ce9fe6a4f9d))
+
 # [9.6.0-alpha.7](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.6...9.6.0-alpha.7) (2026-03-10)
 
 
