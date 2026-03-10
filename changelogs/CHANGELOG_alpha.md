@@ -1,3 +1,10 @@
+# [9.6.0-alpha.5](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.4...9.6.0-alpha.5) (2026-03-10)
+
+
+### Bug Fixes
+
+* SQL Injection via dot-notation sub-key name in `Increment` operation on PostgreSQL ([GHSA-gqpp-xgvh-9h7h](https://github.com/parse-community/parse-server/security/advisories/GHSA-gqpp-xgvh-9h7h)) ([#10165](https://github.com/parse-community/parse-server/issues/10165)) ([169d692](https://github.com/parse-community/parse-server/commit/169d69257dda670daf0b20a967d0598a90510c82))
+
 # [9.6.0-alpha.4](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.3...9.6.0-alpha.4) (2026-03-09)
 
 
