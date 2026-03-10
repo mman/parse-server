@@ -1,3 +1,10 @@
+# [9.6.0-alpha.7](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.6...9.6.0-alpha.7) (2026-03-10)
+
+
+### Bug Fixes
+
+* MFA recovery codes not consumed after use ([GHSA-4hf6-3x24-c9m8](https://github.com/parse-community/parse-server/security/advisories/GHSA-4hf6-3x24-c9m8)) ([#10170](https://github.com/parse-community/parse-server/issues/10170)) ([18abdd9](https://github.com/parse-community/parse-server/commit/18abdd960baf97cf5dce5cd46ca6b0b874218d94))
+
 # [9.6.0-alpha.6](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.5...9.6.0-alpha.6) (2026-03-10)
 
 
