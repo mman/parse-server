@@ -1,3 +1,10 @@
+# [9.6.0-alpha.10](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.9...9.6.0-alpha.10) (2026-03-11)
+
+
+### Bug Fixes
+
+* SQL injection via query field name when using PostgreSQL ([GHSA-c442-97qw-j6c6](https://github.com/parse-community/parse-server/security/advisories/GHSA-c442-97qw-j6c6)) ([#10181](https://github.com/parse-community/parse-server/issues/10181)) ([be281b1](https://github.com/parse-community/parse-server/commit/be281b1ed9c6b7abf992e5583fc2db7875031172))
+
 # [9.6.0-alpha.9](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.8...9.6.0-alpha.9) (2026-03-10)
 
 
