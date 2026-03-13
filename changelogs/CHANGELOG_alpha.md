@@ -1,3 +1,10 @@
+# [9.6.0-alpha.16](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.15...9.6.0-alpha.16) (2026-03-13)
+
+
+### Bug Fixes
+
+* Session token expiration unchecked on cache hit ([#10194](https://github.com/parse-community/parse-server/issues/10194)) ([a944203](https://github.com/parse-community/parse-server/commit/a944203b268cf467ab4c720928f744d0c889b1e5))
+
 # [9.6.0-alpha.15](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.14...9.6.0-alpha.15) (2026-03-13)
 
 
