@@ -1,3 +1,10 @@
+# [9.6.0-alpha.17](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.16...9.6.0-alpha.17) (2026-03-13)
+
+
+### Bug Fixes
+
+* Session creation endpoint allows overwriting server-generated session fields ([GHSA-5v7g-9h8f-8pgg](https://github.com/parse-community/parse-server/security/advisories/GHSA-5v7g-9h8f-8pgg)) ([#10195](https://github.com/parse-community/parse-server/issues/10195)) ([7ccfb97](https://github.com/parse-community/parse-server/commit/7ccfb972d4a6679726f3a0b3cc8d6a8f1838273c))
+
 # [9.6.0-alpha.16](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.15...9.6.0-alpha.16) (2026-03-13)
 
 
