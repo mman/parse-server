@@ -1,3 +1,10 @@
+# [9.6.0-alpha.20](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.19...9.6.0-alpha.20) (2026-03-14)
+
+
+### Bug Fixes
+
+* Schema poisoning via prototype pollution in deep copy ([GHSA-9ccr-fpp6-78qf](https://github.com/parse-community/parse-server/security/advisories/GHSA-9ccr-fpp6-78qf)) ([#10200](https://github.com/parse-community/parse-server/issues/10200)) ([b321423](https://github.com/parse-community/parse-server/commit/b321423867f5e779b4750f97c4e42d408499fc3b))
+
 # [9.6.0-alpha.19](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.18...9.6.0-alpha.19) (2026-03-14)
 
 
