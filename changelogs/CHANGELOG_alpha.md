@@ -1,3 +1,10 @@
+# [9.6.0-alpha.19](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.18...9.6.0-alpha.19) (2026-03-14)
+
+
+### Bug Fixes
+
+* LiveQuery subscription with invalid regular expression crashes server ([GHSA-827p-g5x5-h86c](https://github.com/parse-community/parse-server/security/advisories/GHSA-827p-g5x5-h86c)) ([#10197](https://github.com/parse-community/parse-server/issues/10197)) ([0ae0eee](https://github.com/parse-community/parse-server/commit/0ae0eeee524204325e09efcb315c50096aaf20f8))
+
 # [9.6.0-alpha.18](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.17...9.6.0-alpha.18) (2026-03-14)
 
 
