@@ -1,3 +1,10 @@
+# [9.6.0-alpha.22](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.21...9.6.0-alpha.22) (2026-03-15)
+
+
+### Bug Fixes
+
+* Revert accidental breaking default values for query complexity limits ([#10205](https://github.com/parse-community/parse-server/issues/10205)) ([ab8dd54](https://github.com/parse-community/parse-server/commit/ab8dd54d8bcfea996aa60f0b9fac67dedb79d0e6))
+
 # [9.6.0-alpha.21](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.20...9.6.0-alpha.21) (2026-03-15)
 
 
