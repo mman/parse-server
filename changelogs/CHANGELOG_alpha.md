@@ -1,3 +1,10 @@
+# [9.6.0-alpha.24](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.23...9.6.0-alpha.24) (2026-03-15)
+
+
+### Bug Fixes
+
+* Cloud function dispatch crashes server via prototype chain traversal ([GHSA-4263-jgmp-7pf4](https://github.com/parse-community/parse-server/security/advisories/GHSA-4263-jgmp-7pf4)) ([#10210](https://github.com/parse-community/parse-server/issues/10210)) ([286373d](https://github.com/parse-community/parse-server/commit/286373dddfef5ef90505be5d954297daed32458c))
+
 # [9.6.0-alpha.23](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.22...9.6.0-alpha.23) (2026-03-15)
 
 
