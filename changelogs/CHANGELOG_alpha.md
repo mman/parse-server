@@ -1,3 +1,10 @@
+# [9.6.0-alpha.21](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.20...9.6.0-alpha.21) (2026-03-15)
+
+
+### Bug Fixes
+
+* Server crash via deeply nested query condition operators ([GHSA-9xp9-j92r-p88v](https://github.com/parse-community/parse-server/security/advisories/GHSA-9xp9-j92r-p88v)) ([#10202](https://github.com/parse-community/parse-server/issues/10202)) ([f44e306](https://github.com/parse-community/parse-server/commit/f44e3061471c9d527b7c0894bbd86f1823de52c4))
+
 # [9.6.0-alpha.20](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.19...9.6.0-alpha.20) (2026-03-14)
 
 
