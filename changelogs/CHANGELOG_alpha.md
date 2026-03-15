@@ -1,3 +1,10 @@
+# [9.6.0-alpha.26](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.25...9.6.0-alpha.26) (2026-03-15)
+
+
+### Bug Fixes
+
+* Validate session in middleware for non-GET requests to `/sessions/me` ([#10213](https://github.com/parse-community/parse-server/issues/10213)) ([2a9fdab](https://github.com/parse-community/parse-server/commit/2a9fdab3672e702ce296fc83c99902da37e53e29))
+
 # [9.6.0-alpha.25](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.24...9.6.0-alpha.25) (2026-03-15)
 
 
