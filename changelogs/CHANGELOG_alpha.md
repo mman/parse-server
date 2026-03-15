@@ -1,3 +1,10 @@
+# [9.6.0-alpha.27](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.26...9.6.0-alpha.27) (2026-03-15)
+
+
+### Bug Fixes
+
+* Rate limit user zone key fallback and batch request bypass ([#10214](https://github.com/parse-community/parse-server/issues/10214)) ([434ecbe](https://github.com/parse-community/parse-server/commit/434ecbec702e74fe8d151fbfc5ec0779f77a25f2))
+
 # [9.6.0-alpha.26](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.25...9.6.0-alpha.26) (2026-03-15)
 
 
