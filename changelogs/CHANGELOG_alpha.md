@@ -1,3 +1,10 @@
+# [9.6.0-alpha.23](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.22...9.6.0-alpha.23) (2026-03-15)
+
+
+### Bug Fixes
+
+* Validate body field types in request middleware ([#10209](https://github.com/parse-community/parse-server/issues/10209)) ([df69046](https://github.com/parse-community/parse-server/commit/df690463f8066dcde17a2e90e53dfbd7e86ff0bd))
+
 # [9.6.0-alpha.22](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.21...9.6.0-alpha.22) (2026-03-15)
 
 
