@@ -256,4 +256,68 @@ describe('Parse.Session', () => {
     expect(newSession.createdWith.action).toBe('create');
     expect(newSession.createdWith.authProvider).toBeUndefined();
   });
+
+  describe('PUT /sessions/me', () => {
+    it('should return error with invalid session token', async () => {
+      const response = await request({
+        method: 'PUT',
+        url: 'http://localhost:8378/1/sessions/me',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': 'r:invalid-session-token',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      }).catch(e => e);
+      expect(response.status).not.toBe(500);
+      expect(response.data.code).toBe(Parse.Error.INVALID_SESSION_TOKEN);
+    });
+
+    it('should return error without session token', async () => {
+      const response = await request({
+        method: 'PUT',
+        url: 'http://localhost:8378/1/sessions/me',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      }).catch(e => e);
+      expect(response.status).toBeGreaterThanOrEqual(400);
+      expect(response.status).toBeLessThan(500);
+      expect(response.data?.code).toBeDefined();
+    });
+  });
+
+  describe('DELETE /sessions/me', () => {
+    it('should return error with invalid session token', async () => {
+      const response = await request({
+        method: 'DELETE',
+        url: 'http://localhost:8378/1/sessions/me',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': 'r:invalid-session-token',
+        },
+      }).catch(e => e);
+      expect(response.status).not.toBe(500);
+      expect(response.data.code).toBe(Parse.Error.INVALID_SESSION_TOKEN);
+    });
+
+    it('should return error without session token', async () => {
+      const response = await request({
+        method: 'DELETE',
+        url: 'http://localhost:8378/1/sessions/me',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+      }).catch(e => e);
+      expect(response.status).toBeGreaterThanOrEqual(400);
+      expect(response.status).toBeLessThan(500);
+      expect(response.data?.code).toBeDefined();
+    });
+  });
 });
