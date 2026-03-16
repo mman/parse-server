@@ -1,3 +1,10 @@
+# [9.6.0-alpha.32](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.31...9.6.0-alpha.32) (2026-03-16)
+
+
+### Bug Fixes
+
+* Instance comparison with `instanceof` is not realm-safe ([#10225](https://github.com/parse-community/parse-server/issues/10225)) ([51efb1e](https://github.com/parse-community/parse-server/commit/51efb1efb9fa3f2d578de63f61b20c6a4fbcbd9a))
+
 # [9.6.0-alpha.31](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.30...9.6.0-alpha.31) (2026-03-16)
 
 
