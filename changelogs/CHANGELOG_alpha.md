@@ -1,3 +1,10 @@
+# [9.6.0-alpha.33](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.32...9.6.0-alpha.33) (2026-03-17)
+
+
+### Features
+
+* Add `enableProductPurchaseLegacyApi` option to disable legacy IAP validation ([#10228](https://github.com/parse-community/parse-server/issues/10228)) ([622ee85](https://github.com/parse-community/parse-server/commit/622ee85dc27a4ef721c1d4f61d3ed881a064da0b))
+
 # [9.6.0-alpha.32](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.31...9.6.0-alpha.32) (2026-03-16)
 
 
