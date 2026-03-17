@@ -1,3 +1,10 @@
+# [9.6.0-alpha.34](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.33...9.6.0-alpha.34) (2026-03-17)
+
+
+### Bug Fixes
+
+* Input type validation for query operators and batch path ([#10230](https://github.com/parse-community/parse-server/issues/10230)) ([a628911](https://github.com/parse-community/parse-server/commit/a6289118d268d5dd5c453a22e99a48d36dcc81da))
+
 # [9.6.0-alpha.33](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.32...9.6.0-alpha.33) (2026-03-17)
 
 
