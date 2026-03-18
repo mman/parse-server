@@ -1,3 +1,10 @@
+# [9.6.0-alpha.39](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.38...9.6.0-alpha.39) (2026-03-18)
+
+
+### Bug Fixes
+
+* Locale parameter path traversal in pages router ([#10242](https://github.com/parse-community/parse-server/issues/10242)) ([01fb6a9](https://github.com/parse-community/parse-server/commit/01fb6a972cf2437ba965dff590afec50184cf6e1))
+
 # [9.6.0-alpha.38](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.37...9.6.0-alpha.38) (2026-03-18)
 
 
