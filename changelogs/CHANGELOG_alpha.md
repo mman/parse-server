@@ -1,3 +1,10 @@
+# [9.6.0-alpha.36](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.35...9.6.0-alpha.36) (2026-03-18)
+
+
+### Bug Fixes
+
+* Rate limit bypass via HTTP method override and batch method spoofing ([#10234](https://github.com/parse-community/parse-server/issues/10234)) ([7d72d26](https://github.com/parse-community/parse-server/commit/7d72d264c03b63b463664d545c8c57f4851e4287))
+
 # [9.6.0-alpha.35](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.34...9.6.0-alpha.35) (2026-03-17)
 
 
