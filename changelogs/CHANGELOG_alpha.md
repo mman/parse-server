@@ -1,3 +1,10 @@
+# [9.6.0-alpha.41](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.40...9.6.0-alpha.41) (2026-03-19)
+
+
+### Bug Fixes
+
+* Auth provider validation bypass on login via partial authData ([GHSA-pfj7-wv7c-22pr](https://github.com/parse-community/parse-server/security/advisories/GHSA-pfj7-wv7c-22pr)) ([#10246](https://github.com/parse-community/parse-server/issues/10246)) ([98f4ba5](https://github.com/parse-community/parse-server/commit/98f4ba5bcf2c199bfe6225f672e8edcd08ba732d))
+
 # [9.6.0-alpha.40](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.39...9.6.0-alpha.40) (2026-03-19)
 
 
