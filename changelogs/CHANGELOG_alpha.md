@@ -1,3 +1,10 @@
+# [9.6.0-alpha.46](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.45...9.6.0-alpha.46) (2026-03-20)
+
+
+### Bug Fixes
+
+* Incomplete JSON key escaping in PostgreSQL Increment on nested Object fields ([#10261](https://github.com/parse-community/parse-server/issues/10261)) ([a692873](https://github.com/parse-community/parse-server/commit/a6928737dd40a3310f6e419f223cf93fdd442f2b))
+
 # [9.6.0-alpha.45](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.44...9.6.0-alpha.45) (2026-03-20)
 
 
