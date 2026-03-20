@@ -1,3 +1,10 @@
+# [9.6.0-alpha.47](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.46...9.6.0-alpha.47) (2026-03-20)
+
+
+### Bug Fixes
+
+* Normalize HTTP method case in `allowMethodOverride` middleware ([#10262](https://github.com/parse-community/parse-server/issues/10262)) ([a248e8c](https://github.com/parse-community/parse-server/commit/a248e8cc99d857466aa5a5d3a472795a238acbc2))
+
 # [9.6.0-alpha.46](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.45...9.6.0-alpha.46) (2026-03-20)
 
 
