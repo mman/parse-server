@@ -1,3 +1,10 @@
+# [9.6.0-alpha.44](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.43...9.6.0-alpha.44) (2026-03-20)
+
+
+### Bug Fixes
+
+* Query condition depth bypass via pre-validation transform pipeline ([GHSA-9fjp-q3c4-6w3j](https://github.com/parse-community/parse-server/security/advisories/GHSA-9fjp-q3c4-6w3j)) ([#10257](https://github.com/parse-community/parse-server/issues/10257)) ([85994ef](https://github.com/parse-community/parse-server/commit/85994eff9e7b34cac7e1a2f5791985022a1461d1))
+
 # [9.6.0-alpha.43](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.42...9.6.0-alpha.43) (2026-03-20)
 
 
