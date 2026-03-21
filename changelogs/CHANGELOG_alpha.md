@@ -1,3 +1,10 @@
+# [9.6.0-alpha.53](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.52...9.6.0-alpha.53) (2026-03-21)
+
+
+### Bug Fixes
+
+* SQL injection via aggregate and distinct field names in PostgreSQL adapter ([GHSA-p2w6-rmh7-w8q3](https://github.com/parse-community/parse-server/security/advisories/GHSA-p2w6-rmh7-w8q3)) ([#10272](https://github.com/parse-community/parse-server/issues/10272)) ([bdddab5](https://github.com/parse-community/parse-server/commit/bdddab5f8b61a40cb8fc62dd895887bdd2f3838e))
+
 # [9.6.0-alpha.52](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.51...9.6.0-alpha.52) (2026-03-21)
 
 
