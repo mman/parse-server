@@ -1,3 +1,10 @@
+# [9.6.0-alpha.51](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.50...9.6.0-alpha.51) (2026-03-21)
+
+
+### Bug Fixes
+
+* Create CLP not enforced before user field validation on signup ([#10268](https://github.com/parse-community/parse-server/issues/10268)) ([a0530c2](https://github.com/parse-community/parse-server/commit/a0530c251a9e15198c60c1c15c6cc0802a1dd18c))
+
 # [9.6.0-alpha.50](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.49...9.6.0-alpha.50) (2026-03-21)
 
 
