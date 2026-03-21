@@ -1,3 +1,10 @@
+# [9.6.0-alpha.49](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.48...9.6.0-alpha.49) (2026-03-21)
+
+
+### Bug Fixes
+
+* Add configurable batch request sub-request limit via option `requestComplexity.batchRequestLimit` ([#10265](https://github.com/parse-community/parse-server/issues/10265)) ([164ed0d](https://github.com/parse-community/parse-server/commit/164ed0dd1206e96ce42e46058016a7d7eaf84d85))
+
 # [9.6.0-alpha.48](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.47...9.6.0-alpha.48) (2026-03-21)
 
 
