@@ -1,3 +1,10 @@
+# [9.6.0-alpha.50](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.49...9.6.0-alpha.50) (2026-03-21)
+
+
+### Bug Fixes
+
+* Account lockout race condition allows bypassing threshold via concurrent requests ([#10266](https://github.com/parse-community/parse-server/issues/10266)) ([ff70fee](https://github.com/parse-community/parse-server/commit/ff70fee7e18d7e627b590f7f5717a58ee91cfecb))
+
 # [9.6.0-alpha.49](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.48...9.6.0-alpha.49) (2026-03-21)
 
 
