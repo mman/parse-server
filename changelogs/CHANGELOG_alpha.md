@@ -1,3 +1,10 @@
+# [9.6.0-alpha.52](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.51...9.6.0-alpha.52) (2026-03-21)
+
+
+### Bug Fixes
+
+* Denial of service via unindexed database query for unconfigured auth providers ([GHSA-g4cf-xj29-wqqr](https://github.com/parse-community/parse-server/security/advisories/GHSA-g4cf-xj29-wqqr)) ([#10270](https://github.com/parse-community/parse-server/issues/10270)) ([fbac847](https://github.com/parse-community/parse-server/commit/fbac847499e57f243315c5fc7135be1d58bb8e54))
+
 # [9.6.0-alpha.51](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.50...9.6.0-alpha.51) (2026-03-21)
 
 
