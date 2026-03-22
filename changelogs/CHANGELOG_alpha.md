@@ -1,3 +1,10 @@
+## [9.6.1-alpha.1](https://github.com/parse-community/parse-server/compare/9.6.0...9.6.1-alpha.1) (2026-03-22)
+
+
+### Bug Fixes
+
+* User cannot retrieve own email with `protectedFieldsOwnerExempt: false` despite `email` not in `protectedFields` ([#10284](https://github.com/parse-community/parse-server/issues/10284)) ([4a65d77](https://github.com/parse-community/parse-server/commit/4a65d77ea3fd2ccb121d4bd28e92435295203bf7))
+
 # [9.6.0-alpha.56](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.55...9.6.0-alpha.56) (2026-03-22)
 
 
