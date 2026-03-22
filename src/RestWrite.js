@@ -3,7 +3,6 @@
 // This could be either a "create" or an "update".
 
 var SchemaController = require('./Controllers/SchemaController');
-var deepcopy = require('deepcopy');
 
 const Auth = require('./Auth');
 const Utils = require('./Utils');
@@ -75,8 +74,8 @@ function RestWrite(config, auth, className, query, data, originalData, clientSDK
 
   // Processing this operation may mutate our data, so we operate on a
   // copy
-  this.query = deepcopy(query);
-  this.data = deepcopy(data);
+  this.query = structuredClone(query);
+  this.data = structuredClone(data);
   // We never change originalData, so we do not need a deep copy
   this.originalData = originalData;
 
@@ -131,6 +130,9 @@ RestWrite.prototype.execute = function () {
     .then(schemaController => {
       this.validSchemaController = schemaController;
       return this.setRequiredFieldsIfNeeded();
+    })
+    .then(() => {
+      return this.validateCreatePermission();
     })
     .then(() => {
       return this.transformUser();
@@ -377,10 +379,10 @@ RestWrite.prototype.setRequiredFieldsIfNeeded = function () {
         JSON.stringify(schema.classLevelPermissions.ACL) !==
           JSON.stringify({ '*': { read: true, write: true } })
       ) {
-        const acl = deepcopy(schema.classLevelPermissions.ACL);
+        const acl = structuredClone(schema.classLevelPermissions.ACL);
         if (acl.currentUser) {
           if (this.auth.user?.id) {
-            acl[this.auth.user?.id] = deepcopy(acl.currentUser);
+            acl[this.auth.user?.id] = structuredClone(acl.currentUser);
           }
           delete acl.currentUser;
         }
@@ -453,8 +455,14 @@ RestWrite.prototype.validateAuthData = function () {
   const authData = this.data.authData;
   const hasUsernameAndPassword =
     typeof this.data.username === 'string' && typeof this.data.password === 'string';
+  const hasAuthData =
+    authData &&
+    Object.keys(authData).some(provider => {
+      const providerData = authData[provider];
+      return providerData && typeof providerData === 'object' && Object.keys(providerData).length;
+    });
 
-  if (!this.query && !authData) {
+  if (!this.query && !hasAuthData) {
     if (typeof this.data.username !== 'string' || _.isEmpty(this.data.username)) {
       throw new Parse.Error(Parse.Error.USERNAME_MISSING, 'bad or missing username');
     }
@@ -463,13 +471,10 @@ RestWrite.prototype.validateAuthData = function () {
     }
   }
 
-  if (
-    (authData && !Object.keys(authData).length) ||
-    !Object.prototype.hasOwnProperty.call(this.data, 'authData')
-  ) {
+  if (!Object.prototype.hasOwnProperty.call(this.data, 'authData')) {
     // Nothing to validate here
     return;
-  } else if (Object.prototype.hasOwnProperty.call(this.data, 'authData') && !this.data.authData) {
+  } else if (!this.data.authData) {
     // Handle saving authData to null
     throw new Parse.Error(
       Parse.Error.UNSUPPORTED_SERVICE,
@@ -478,14 +483,16 @@ RestWrite.prototype.validateAuthData = function () {
   }
 
   var providers = Object.keys(authData);
-  if (providers.length > 0) {
-    const canHandleAuthData = providers.some(provider => {
-      const providerAuthData = authData[provider] || {};
-      return !!Object.keys(providerAuthData).length;
-    });
-    if (canHandleAuthData || hasUsernameAndPassword || this.auth.isMaster || this.getUserId()) {
-      return this.handleAuthData(authData);
-    }
+  if (!providers.length) {
+    // Empty authData object, nothing to validate
+    return;
+  }
+  const canHandleAuthData = providers.some(provider => {
+    const providerAuthData = authData[provider] || {};
+    return !!Object.keys(providerAuthData).length;
+  });
+  if (canHandleAuthData || hasUsernameAndPassword || this.auth.isMaster || this.getUserId()) {
+    return this.handleAuthData(authData);
   }
   throw new Parse.Error(
     Parse.Error.UNSUPPORTED_SERVICE,
@@ -515,6 +522,16 @@ RestWrite.prototype.getUserId = function () {
 };
 
 // Developers are allowed to change authData via before save trigger
+RestWrite.prototype._throwIfAuthDataDuplicate = function (error) {
+  if (
+    this.className === '_User' &&
+    error?.code === Parse.Error.DUPLICATE_VALUE &&
+    error.userInfo?.duplicated_field?.startsWith('_auth_data_')
+  ) {
+    throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED, 'this auth is already used');
+  }
+};
+
 // we need after before save to ensure that the developer
 // is not currently duplicating auth data ID
 RestWrite.prototype.ensureUniqueAuthDataId = async function () {
@@ -607,7 +624,7 @@ RestWrite.prototype.handleAuthData = async function (authData) {
         // Run beforeLogin hook before storing any updates
         // to authData on the db; changes to userResult
         // will be ignored.
-        await this.runBeforeLoginTrigger(deepcopy(userResult));
+        await this.runBeforeLoginTrigger(structuredClone(userResult));
 
         // If we are in login operation via authData
         // we need to be sure that the user has provided
@@ -625,9 +642,10 @@ RestWrite.prototype.handleAuthData = async function (authData) {
         return;
       }
 
-      // Force to validate all provided authData on login
-      // on update only validate mutated ones
-      if (hasMutatedAuthData || !this.config.allowExpiredAuthDataToken) {
+      // Always validate all provided authData on login to prevent authentication
+      // bypass via partial authData (e.g. sending only the provider ID without
+      // an access token); on update only validate mutated ones
+      if (isLogin || hasMutatedAuthData || !this.config.allowExpiredAuthDataToken) {
         const res = await Auth.handleAuthDataValidation(
           isLogin ? authData : mutatedAuthData,
           this,
@@ -652,12 +670,17 @@ RestWrite.prototype.handleAuthData = async function (authData) {
         // uses the `doNotSave` option. Just update the authData part
         // Then we're good for the user, early exit of sorts
         if (Object.keys(this.data.authData).length) {
-          await this.config.database.update(
-            this.className,
-            { objectId: this.data.objectId },
-            { authData: this.data.authData },
-            {}
-          );
+          try {
+            await this.config.database.update(
+              this.className,
+              { objectId: this.data.objectId },
+              { authData: this.data.authData },
+              {}
+            );
+          } catch (error) {
+            this._throwIfAuthDataDuplicate(error);
+            throw error;
+          }
         }
       }
     }
@@ -676,6 +699,24 @@ RestWrite.prototype.checkRestrictedFields = async function () {
       this.config
     );
   }
+};
+
+// Validates the create class-level permission before transformUser runs.
+// This prevents user enumeration (username/email existence) when public
+// create is disabled on _User, because transformUser checks uniqueness
+// before the CLP is enforced in runDatabaseOperation.
+RestWrite.prototype.validateCreatePermission = async function () {
+  if (this.query || this.auth.isMaster || this.auth.isMaintenance) {
+    return;
+  }
+  if (!this.validSchemaController) {
+    return;
+  }
+  await this.validSchemaController.validatePermission(
+    this.className,
+    this.runOptions.acl || [],
+    'create'
+  );
 };
 
 // The non-third-party parts of User transformation
@@ -1160,6 +1201,10 @@ RestWrite.prototype.handleSession = function () {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME);
     } else if (this.data.sessionToken) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME);
+    } else if (this.data.expiresAt && !this.auth.isMaster && !this.auth.isMaintenance) {
+      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME);
+    } else if (this.data.createdWith && !this.auth.isMaster && !this.auth.isMaintenance) {
+      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME);
     }
     if (!this.auth.isMaster) {
       this.query = {
@@ -1180,7 +1225,7 @@ RestWrite.prototype.handleSession = function () {
   if (!this.query && !this.auth.isMaster && !this.auth.isMaintenance) {
     const additionalSessionData = {};
     for (var key in this.data) {
-      if (key === 'objectId' || key === 'user') {
+      if (key === 'objectId' || key === 'user' || key === 'sessionToken' || key === 'expiresAt' || key === 'createdWith') {
         continue;
       }
       additionalSessionData[key] = this.data[key];
@@ -1579,6 +1624,10 @@ RestWrite.prototype.runDatabaseOperation = function () {
           false,
           this.validSchemaController
         )
+        .catch(error => {
+          this._throwIfAuthDataDuplicate(error);
+          throw error;
+        })
         .then(response => {
           response.updatedAt = this.updatedAt;
           this._updateResponseWithData(response, this.data);
@@ -1612,6 +1661,8 @@ RestWrite.prototype.runDatabaseOperation = function () {
         if (this.className !== '_User' || error.code !== Parse.Error.DUPLICATE_VALUE) {
           throw error;
         }
+
+        this._throwIfAuthDataDuplicate(error);
 
         // Quick check, if we were able to infer the duplicated field name
         if (error && error.userInfo && error.userInfo.duplicated_field === 'username') {
@@ -1767,7 +1818,7 @@ RestWrite.prototype.sanitizedData = function () {
       delete data[key];
     }
     return data;
-  }, deepcopy(this.data));
+  }, structuredClone(this.data));
   return Parse._decode(undefined, data);
 };
 
@@ -1817,7 +1868,7 @@ RestWrite.prototype.buildParseObjects = function () {
       delete data[key];
     }
     return data;
-  }, deepcopy(this.data));
+  }, structuredClone(this.data));
 
   const sanitized = this.sanitizedData();
   for (const attribute of readOnlyAttributes) {

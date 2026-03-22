@@ -1,6 +1,7 @@
 // triggers.js
 import Parse from 'parse/node';
 import { logger } from './logger';
+import Utils from './Utils';
 
 export const Types = {
   beforeLogin: 'beforeLogin',
@@ -87,7 +88,7 @@ function validateClassNameForTriggers(className, type) {
   return className;
 }
 
-const _triggerStore = {};
+const _triggerStore = Object.create(null);
 
 const Category = {
   Functions: 'Functions',
@@ -109,6 +110,9 @@ function getStore(category, name, applicationId) {
   _triggerStore[applicationId] = _triggerStore[applicationId] || baseStore();
   let store = _triggerStore[applicationId][category];
   for (const component of path) {
+    if (!Object.prototype.hasOwnProperty.call(store, component)) {
+      return createStore();
+    }
     store = store[component];
     if (!store) {
       return createStore();
@@ -137,6 +141,9 @@ function remove(category, name, applicationId) {
 function get(category, name, applicationId) {
   const lastComponent = name.split('.').splice(-1);
   const store = getStore(category, name, applicationId);
+  if (!Object.prototype.hasOwnProperty.call(store, lastComponent)) {
+    return undefined;
+  }
   return store[lastComponent];
 }
 
@@ -706,7 +713,7 @@ export function resolveError(message, defaultOpts) {
     return new Parse.Error(code, message);
   }
   const error = new Parse.Error(code, message.message || message);
-  if (message instanceof Error) {
+  if (Utils.isNativeError(message)) {
     error.stack = message.stack;
   }
   return error;
@@ -1075,6 +1082,9 @@ export async function maybeRunFileTrigger(triggerType, fileObject, config, auth)
       const result = await fileTrigger(request);
       if (request.forceDownload) {
         fileObject.forceDownload = true;
+      }
+      if (request.responseHeaders) {
+        fileObject.responseHeaders = request.responseHeaders;
       }
       logTriggerSuccessBeforeHook(
         triggerType,

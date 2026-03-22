@@ -258,6 +258,9 @@ global.afterEachFn = async () => {
         if (!className.startsWith('_')) {
           return true;
         }
+        if (className.startsWith('_Join:')) {
+          return true;
+        }
         return [
           '_User',
           '_Installation',
@@ -334,7 +337,7 @@ function normalize(obj) {
   if (obj === null || typeof obj !== 'object') {
     return JSON.stringify(obj);
   }
-  if (obj instanceof Array) {
+  if (Array.isArray(obj)) {
     return '[' + obj.map(normalize).join(', ') + ']';
   }
   let answer = '{';

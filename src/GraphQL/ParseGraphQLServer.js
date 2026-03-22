@@ -4,13 +4,13 @@ import { ApolloServer } from '@apollo/server';
 import { expressMiddleware } from '@as-integrations/express5';
 import { ApolloServerPluginCacheControlDisabled } from '@apollo/server/plugin/disabled';
 import express from 'express';
-import { execute, subscribe, GraphQLError, parse } from 'graphql';
-import { SubscriptionServer } from 'subscriptions-transport-ws';
+import { GraphQLError, parse } from 'graphql';
 import { handleParseErrors, handleParseHeaders, handleParseSession } from '../middlewares';
 import requiredParameter from '../requiredParameter';
 import defaultLogger from '../logger';
 import { ParseGraphQLSchema } from './ParseGraphQLSchema';
 import ParseGraphQLController, { ParseGraphQLConfig } from '../Controllers/ParseGraphQLController';
+import { createComplexityValidationPlugin } from './helpers/queryComplexity';
 
 
 const hasTypeIntrospection = (query) => {
@@ -155,7 +155,7 @@ class ParseGraphQLServer {
           // We need always true introspection because apollo server have changing behavior based on the NODE_ENV variable
           // we delegate the introspection control to the IntrospectionControlPlugin
           introspection: true,
-          plugins: [ApolloServerPluginCacheControlDisabled(), IntrospectionControlPlugin(this.config.graphQLPublicIntrospection)],
+          plugins: [ApolloServerPluginCacheControlDisabled(), IntrospectionControlPlugin(this.config.graphQLPublicIntrospection), createComplexityValidationPlugin(() => this.parseServer.config.requestComplexity)],
           schema,
         });
         await apollo.start();
@@ -256,23 +256,6 @@ class ParseGraphQLServer {
           </script>`
         );
         res.end();
-      }
-    );
-  }
-
-  createSubscriptions(server) {
-    SubscriptionServer.create(
-      {
-        execute,
-        subscribe,
-        onOperation: async (_message, params, webSocket) =>
-          Object.assign({}, params, await this._getGraphQLOptions(webSocket.upgradeReq)),
-      },
-      {
-        server,
-        path:
-          this.config.subscriptionsPath ||
-          requiredParameter('You must provide a config.subscriptionsPath to createSubscriptions!'),
       }
     );
   }

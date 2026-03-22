@@ -168,9 +168,13 @@ export interface ParseServerOptions {
   preserveFileName: ?boolean;
   /* Personally identifiable information fields in the user table the should be removed for non-authorized users. Deprecated @see protectedFields */
   userSensitiveFields: ?(string[]);
-  /* Protected fields that should be treated with extra security when fetching details.
+  /* Fields per class that are hidden from query results for specific user groups. Protected fields are stripped from the server response, but can still be used internally (e.g. in Cloud Code triggers). Configure as `{ 'ClassName': { 'UserGroup': ['field1', 'field2'] } }` where `UserGroup` is one of: `'*'` (all users), `'authenticated'` (authenticated users), `'role:RoleName'` (users with a specific role), `'userField:FieldName'` (users referenced by a pointer field), or a user `objectId` to target a specific user. When multiple groups apply, the intersection of their protected fields is used. By default, `email` is protected on the `_User` class for all users. On the `_User` class, the object owner is exempt from protected fields by default; see `protectedFieldsOwnerExempt` to change this.
   :DEFAULT: {"_User": {"*": ["email"]}} */
   protectedFields: ?ProtectedFields;
+  /* Whether the `_User` class is exempt from `protectedFields` when the logged-in user queries their own user object. If `true` (default), a user can see all their own fields regardless of `protectedFields` configuration. If `false`, `protectedFields` applies equally to the user's own object, consistent with all other classes. Defaults to `true`.
+  :ENV: PARSE_SERVER_PROTECTED_FIELDS_OWNER_EXEMPT
+  :DEFAULT: true */
+  protectedFieldsOwnerExempt: ?boolean;
   /* Enable (or disable) anonymous users, defaults to true
   :ENV: PARSE_SERVER_ENABLE_ANON_USERS
   :DEFAULT: true */
@@ -183,7 +187,7 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_ALLOW_CUSTOM_OBJECT_ID
   :DEFAULT: false */
   allowCustomObjectId: ?boolean;
-  /* Configuration for your authentication providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication
+  /* Configuration for your authentication providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication<br><br>Provider names must start with a letter and contain only letters, digits, and underscores (`/^[A-Za-z][A-Za-z0-9_]*$/`). This is because each provider name is used to construct a database field (`_auth_data_<provider>`), which must comply with Parse Server's field naming rules.
   :ENV: PARSE_SERVER_AUTH_PROVIDERS */
   auth: ?{ [string]: AuthAdapter };
   /* Optional. Enables insecure authentication adapters. Insecure auth adapters are deprecated and will be removed in a future version. Defaults to `false`.
@@ -235,6 +239,13 @@ export interface ParseServerOptions {
   Requires option `verifyUserEmails: true`.
   :DEFAULT: false */
   emailVerifyTokenReuseIfValid: ?boolean;
+  /* Set to `true` if a request to verify the email should return a success response even if the provided email address does not belong to a verifiable account, for example because it is unknown or already verified, or `false` if the request should return an error response in those cases.
+  <br><br>
+  Default is `true`.
+  <br>
+  Requires option `verifyUserEmails: true`.
+  :DEFAULT: true */
+  emailVerifySuccessOnInvalidEmail: ?boolean;
   /* Set to `false` to prevent sending of verification email. Supports a function with a return value of `true` or `false` for conditional email sending.
   <br><br>
   Default is `true`.
@@ -244,7 +255,9 @@ export interface ParseServerOptions {
     | boolean
     | (SendEmailVerificationRequest => boolean | Promise<boolean>)
   );
-  /* The account lockout policy for failed login attempts. */
+  /* The account lockout policy for failed login attempts.
+  <br><br>
+  Note: Setting a user's ACL to an empty object `{}` via master key is a separate mechanism that only prevents new logins; it does not invalidate existing session tokens. To immediately revoke a user's access, destroy their sessions via master key in addition to setting the ACL. */
   accountLockout: ?AccountLockoutOptions;
   /* The password policy for enforcing password related rules. */
   passwordPolicy: ?PasswordPolicyOptions;
@@ -296,6 +309,10 @@ export interface ParseServerOptions {
   /* Enables the default express error handler for all errors
   :DEFAULT: false */
   enableExpressErrorHandler: ?boolean;
+  /* Deprecated. Enables the legacy product purchase API including the `_Product` class and the `/validate_purchase` endpoint. This is an undocumented, unmaintained legacy feature inherited from the original Parse platform that may not function as expected. We strongly advise against using it. It will be removed in a future major version.
+  :ENV: PARSE_SERVER_ENABLE_PRODUCT_PURCHASE_LEGACY_API
+  :DEFAULT: true */
+  enableProductPurchaseLegacyApi: ?boolean;
   /* Sets the number of characters in generated object id's, default 10
   :DEFAULT: 10 */
   objectIdSize: ?number;
@@ -356,19 +373,23 @@ export interface ParseServerOptions {
   schema: ?SchemaOptions;
   /* Callback when server has closed */
   serverCloseComplete: ?() => void;
+  /* Options to limit the complexity of requests to prevent denial-of-service attacks. Limits are enforced for all requests except those using the master or maintenance key. Each property can be set to `-1` to disable that specific limit.
+  :ENV: PARSE_SERVER_REQUEST_COMPLEXITY
+  :DEFAULT: {} */
+  requestComplexity: ?RequestComplexityOptions;
   /* The security options to identify and report weak security settings.
   :DEFAULT: {} */
   security: ?SecurityOptions;
   /* Set to true if new users should be created without public read and write access.
   :DEFAULT: true */
   enforcePrivateUsers: ?boolean;
-  /* Allow a user to log in even if the 3rd party authentication token that was used to sign in to their account has expired. If this is set to `false`, then the token will be validated every time the user signs in to their account. This refers to the token that is stored in the `_User.authData` field. Defaults to `false`.
+  /* Deprecated. This option will be removed in a future version. Auth providers are always validated on login. On update, if this is set to `true`, auth providers are only re-validated when the auth data has changed. If this is set to `false`, auth providers are re-validated on every update. Defaults to `false`.
   :DEFAULT: false */
   allowExpiredAuthDataToken: ?boolean;
   /* An array of keys and values that are prohibited in database read and write requests to prevent potential security vulnerabilities. It is possible to specify only a key (`{"key":"..."}`), only a value (`{"value":"..."}`) or a key-value pair (`{"key":"...","value":"..."}`). The specification can use the following types: `boolean`, `numeric` or `string`, where `string` will be interpreted as a regex notation. Request data is deep-scanned for matching definitions to detect also any nested occurrences. Defaults are patterns that are likely to be used in malicious requests. Setting this option will override the default patterns.
   :DEFAULT: [{"key":"_bsontype","value":"Code"},{"key":"constructor"},{"key":"__proto__"}] */
   requestKeywordDenylist: ?(RequestKeywordDenylist[]);
-  /* Options to limit repeated requests to Parse Server APIs. This can be used to protect sensitive endpoints such as `/requestPasswordReset` from brute-force attacks or Parse Server as a whole from denial-of-service (DoS) attacks.<br><br>ℹ️ Mind the following limitations:<br>- rate limits applied per IP address; this limits protection against distributed denial-of-service (DDoS) attacks where many requests are coming from various IP addresses<br>- if multiple Parse Server instances are behind a load balancer or ran in a cluster, each instance will calculate it's own request rates, independent from other instances; this limits the applicability of this feature when using a load balancer and another rate limiting solution that takes requests across all instances into account may be more suitable<br>- this feature provides basic protection against denial-of-service attacks, but a more sophisticated solution works earlier in the request flow and prevents a malicious requests to even reach a server instance; it's therefore recommended to implement a solution according to architecture and user case.
+  /* Options to limit repeated requests to Parse Server APIs. This can be used to protect sensitive endpoints such as `/requestPasswordReset` from brute-force attacks or Parse Server as a whole from denial-of-service (DoS) attacks.<br><br>ℹ️ Mind the following limitations:<br>- rate limits applied per IP address; this limits protection against distributed denial-of-service (DDoS) attacks where many requests are coming from various IP addresses<br>- if multiple Parse Server instances are behind a load balancer or ran in a cluster, each instance will calculate it's own request rates, independent from other instances; this limits the applicability of this feature when using a load balancer and another rate limiting solution that takes requests across all instances into account may be more suitable<br>- this feature provides basic protection against denial-of-service attacks, but a more sophisticated solution works earlier in the request flow and prevents a malicious requests to even reach a server instance; it's therefore recommended to implement a solution according to architecture and use case.
   :DEFAULT: [] */
   rateLimit: ?(RateLimitOptions[]);
   /* Options to customize the request context using inversion of control/dependency injection.*/
@@ -383,7 +404,7 @@ export interface RateLimitOptions {
   requestPath: string;
   /* The window of time in milliseconds within which the number of requests set in `requestCount` can be made before the rate limit is applied. */
   requestTimeWindow: ?number;
-  /* The number of requests that can be made per IP address within the time window set in `requestTimeWindow` before the rate limit is applied. */
+  /* The number of requests that can be made per IP address within the time window set in `requestTimeWindow` before the rate limit is applied. For batch requests, this also limits the number of sub-requests in a single batch that target this path; however, requests already consumed in the current time window are not counted against the batch, so the effective limit may be higher when combining individual and batch requests. Note that this is a basic server-level rate limit; for comprehensive protection, use a reverse proxy or WAF for rate limiting. */
   requestCount: ?number;
   /* The error message that should be returned in the body of the HTTP 429 response when the rate limit is hit. Default is `Too many requests.`.
   :DEFAULT: Too many requests. */
@@ -409,6 +430,32 @@ export interface RateLimitOptions {
   Default is `ip`.
   :DEFAULT: ip */
   zone: ?string;
+}
+
+export interface RequestComplexityOptions {
+  /* Maximum depth of include pointer chains (e.g. `a.b.c` = depth 3). Set to `-1` to disable. Default is `-1`.
+  :DEFAULT: -1 */
+  includeDepth: ?number;
+  /* Maximum number of include paths in a single query. Set to `-1` to disable. Default is `-1`.
+  :DEFAULT: -1 */
+  includeCount: ?number;
+  /* Maximum nesting depth of `$inQuery`, `$notInQuery`, `$select`, `$dontSelect` subqueries. Set to `-1` to disable. Default is `-1`.
+  :DEFAULT: -1 */
+  subqueryDepth: ?number;
+  /* Maximum nesting depth of `$or`, `$and`, `$nor` query operators. Set to `-1` to disable. Default is `-1`.
+  :DEFAULT: -1 */
+  queryDepth: ?number;
+  /* Maximum depth of GraphQL field selections. Set to `-1` to disable. Default is `-1`.
+  :ENV: PARSE_SERVER_REQUEST_COMPLEXITY_GRAPHQL_DEPTH
+  :DEFAULT: -1 */
+  graphQLDepth: ?number;
+  /* Maximum number of field selections in a GraphQL query. Set to `-1` to disable. Default is `-1`.
+  :ENV: PARSE_SERVER_REQUEST_COMPLEXITY_GRAPHQL_FIELDS
+  :DEFAULT: -1 */
+  graphQLFields: ?number;
+  /* Maximum number of sub-requests in a single batch request. Set to `-1` to disable. Default is `-1`.
+  :DEFAULT: -1 */
+  batchRequestLimit: ?number;
 }
 
 export interface SecurityOptions {
@@ -624,8 +671,8 @@ export interface PasswordPolicyOptions {
 }
 
 export interface FileUploadOptions {
-  /* Sets the allowed file extensions for uploading files. The extension is defined as an array of file extensions, or a regex pattern.<br><br>It is recommended to restrict the file upload extensions as much as possible. HTML files are especially problematic as they may be used by an attacker who uploads a HTML form to look legitimate under your app's domain name, or to compromise the session token of another user via accessing the browser's local storage.<br><br>Defaults to `^(?![xXsS]?[hH][tT][mM][lL]?$)` which allows any file extension except those MIME types that are mapped to `text/html` and are rendered as website by a web browser.
-  :DEFAULT: ["^(?![xXsS]?[hH][tT][mM][lL]?$)"] */
+  /* Sets the allowed file extensions for uploading files. The extension is defined as an array of file extensions, or a regex pattern.<br><br>It is recommended to only allow the file extensions that your app actually needs, rather than relying on blocking dangerous extensions. This allowlist approach is more secure because new dangerous file extensions may emerge that are not covered by the default blocklist.<br><br>The default blocks the most common file extensions that are known to be rendered as active content by web browsers, such as HTML, SVG, and XML files, which may be used by an attacker to compromise the session token of another user via accessing the browser's local storage. The blocked extensions are: `html`, `htm`, `shtml`, `xhtml`, `xhtml+xml`, `xht`, `svg`, `svgz`, `svg+xml`, `xml`, `xsl`, `xslt`, `xslt+xml`, `xsd`, `rng`, `rdf`, `rdf+xml`, `owl`, `mathml`, `mathml+xml`.<br><br>Defaults to `["^(?!([xXsS]?[hH][tT][mM][lL]?(\\+[xX][mM][lL])?|[xX][hH][tT]|[sS][vV][gG]([zZ]|\\+[xX][mM][lL])?|[xX][mM][lL]|[xX][sS][lL][tT]?(\\+[xX][mM][lL])?|[xX][sS][dD]|[rR][nN][gG]|[rR][dD][fF](\\+[xX][mM][lL])?|[oO][wW][lL]|[mM][aA][tT][hH][mM][lL](\\+[xX][mM][lL])?)$)"]`.
+  :DEFAULT: ["^(?!([xXsS]?[hH][tT][mM][lL]?(\\+[xX][mM][lL])?|[xX][hH][tT]|[sS][vV][gG]([zZ]|\\+[xX][mM][lL])?|[xX][mM][lL]|[xX][sS][lL][tT]?(\\+[xX][mM][lL])?|[xX][sS][dD]|[rR][nN][gG]|[rR][dD][fF](\\+[xX][mM][lL])?|[oO][wW][lL]|[mM][aA][tT][hH][mM][lL](\\+[xX][mM][lL])?)$)"] */
   fileExtensions: ?(string[]);
   /*  Is true if file upload should be allowed for anonymous users.
   :DEFAULT: false */
@@ -782,6 +829,9 @@ export interface DatabaseOptions {
   /* Set to `true` to automatically create a case-insensitive index on the username field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>⚠️ When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.
   :DEFAULT: true */
   createIndexUserUsernameCaseInsensitive: ?boolean;
+  /* Set to `true` to automatically create unique indexes on the authData fields of the _User collection for each configured auth provider on server start, including `anonymous` when anonymous users are enabled. These indexes prevent race conditions during concurrent signups with the same authData. Set to `false` to skip index creation. Default is `true`.<br><br>⚠️ When setting this option to `false` to manually create the indexes, keep in mind that the otherwise automatically created indexes may change in the future to be optimized for the internal usage by Parse Server.
+  :DEFAULT: true */
+  createIndexAuthDataUniqueness: ?boolean;
   /* Set to `true` to automatically create a unique index on the name field of the _Role collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>⚠️ When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.
   :DEFAULT: true */
   createIndexRoleName: ?boolean;
