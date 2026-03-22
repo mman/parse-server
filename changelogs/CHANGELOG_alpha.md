@@ -1,3 +1,10 @@
+# [9.6.0-alpha.56](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.55...9.6.0-alpha.56) (2026-03-22)
+
+
+### Features
+
+* Add `protectedFieldsOwnerExempt` option to control `_User` class owner exemption for `protectedFields` ([#10280](https://github.com/parse-community/parse-server/issues/10280)) ([d5213f8](https://github.com/parse-community/parse-server/commit/d5213f88054fbe066692b7a4661c1b2242aaeddb))
+
 # [9.6.0-alpha.55](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.54...9.6.0-alpha.55) (2026-03-22)
 
 
