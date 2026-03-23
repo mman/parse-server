@@ -1,3 +1,10 @@
+# [9.7.0-alpha.3](https://github.com/parse-community/parse-server/compare/9.7.0-alpha.2...9.7.0-alpha.3) (2026-03-23)
+
+
+### Bug Fixes
+
+* Maintenance key blocked from querying protected fields ([#10290](https://github.com/parse-community/parse-server/issues/10290)) ([7c8b213](https://github.com/parse-community/parse-server/commit/7c8b213d96f1fd79f27d3a2bc01bef8bcaf588cd))
+
 # [9.7.0-alpha.2](https://github.com/parse-community/parse-server/compare/9.7.0-alpha.1...9.7.0-alpha.2) (2026-03-23)
 
 
