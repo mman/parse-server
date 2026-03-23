@@ -1,3 +1,10 @@
+# [9.7.0-alpha.1](https://github.com/parse-community/parse-server/compare/9.6.1...9.7.0-alpha.1) (2026-03-23)
+
+
+### Features
+
+* Add `protectedFieldsTriggerExempt` option to exempt Cloud Code triggers from `protectedFields` ([#10288](https://github.com/parse-community/parse-server/issues/10288)) ([1610f98](https://github.com/parse-community/parse-server/commit/1610f98316f7cb1120a7e20be7a1570b0e116df7))
+
 ## [9.6.1-alpha.1](https://github.com/parse-community/parse-server/compare/9.6.0...9.6.1-alpha.1) (2026-03-22)
 
 
