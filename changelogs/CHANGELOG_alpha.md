@@ -1,3 +1,10 @@
+# [9.7.0-alpha.5](https://github.com/parse-community/parse-server/compare/9.7.0-alpha.4...9.7.0-alpha.5) (2026-03-25)
+
+
+### Bug Fixes
+
+* Postgres query on non-existent column throws internal server error ([#10308](https://github.com/parse-community/parse-server/issues/10308)) ([c5c4325](https://github.com/parse-community/parse-server/commit/c5c43259d1f98af5bbbbc44d9daf7c0f1f8168d3))
+
 # [9.7.0-alpha.4](https://github.com/parse-community/parse-server/compare/9.7.0-alpha.3...9.7.0-alpha.4) (2026-03-24)
 
 
