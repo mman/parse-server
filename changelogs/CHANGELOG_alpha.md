@@ -1,3 +1,10 @@
+# [9.7.0-alpha.9](https://github.com/parse-community/parse-server/compare/9.7.0-alpha.8...9.7.0-alpha.9) (2026-03-27)
+
+
+### Bug Fixes
+
+* LiveQuery protected field leak via shared mutable state across concurrent subscribers ([GHSA-m983-v2ff-wq65](https://github.com/parse-community/parse-server/security/advisories/GHSA-m983-v2ff-wq65)) ([#10330](https://github.com/parse-community/parse-server/issues/10330)) ([776c71c](https://github.com/parse-community/parse-server/commit/776c71c3078e77d38c94937f463741793609d055))
+
 # [9.7.0-alpha.8](https://github.com/parse-community/parse-server/compare/9.7.0-alpha.7...9.7.0-alpha.8) (2026-03-26)
 
 
