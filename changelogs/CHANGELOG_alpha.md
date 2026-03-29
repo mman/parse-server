@@ -1,3 +1,10 @@
+# [9.7.0-alpha.16](https://github.com/parse-community/parse-server/compare/9.7.0-alpha.15...9.7.0-alpha.16) (2026-03-29)
+
+
+### Bug Fixes
+
+* LiveQuery protected-field guard bypass via array-like logical operator value ([GHSA-mmg8-87c5-jrc2](https://github.com/parse-community/parse-server/security/advisories/GHSA-mmg8-87c5-jrc2)) ([#10350](https://github.com/parse-community/parse-server/issues/10350)) ([f63fd1a](https://github.com/parse-community/parse-server/commit/f63fd1a3fe0a7c1c5fe809f01b0e04759e8c9b98))
+
 # [9.7.0-alpha.15](https://github.com/parse-community/parse-server/compare/9.7.0-alpha.14...9.7.0-alpha.15) (2026-03-29)
 
 
