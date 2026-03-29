@@ -1,3 +1,10 @@
+# [9.7.0-alpha.12](https://github.com/parse-community/parse-server/compare/9.7.0-alpha.11...9.7.0-alpha.12) (2026-03-29)
+
+
+### Bug Fixes
+
+* GraphQL complexity validator exponential fragment traversal DoS ([GHSA-mfj6-6p54-m98c](https://github.com/parse-community/parse-server/security/advisories/GHSA-mfj6-6p54-m98c)) ([#10344](https://github.com/parse-community/parse-server/issues/10344)) ([f759bda](https://github.com/parse-community/parse-server/commit/f759bda075298ec44e2b4fb57659a0c56620483b))
+
 # [9.7.0-alpha.11](https://github.com/parse-community/parse-server/compare/9.7.0-alpha.10...9.7.0-alpha.11) (2026-03-28)
 
 
