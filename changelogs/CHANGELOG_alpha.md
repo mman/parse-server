@@ -1,3 +1,10 @@
+# [9.7.0-alpha.15](https://github.com/parse-community/parse-server/compare/9.7.0-alpha.14...9.7.0-alpha.15) (2026-03-29)
+
+
+### Bug Fixes
+
+* Batch login sub-request rate limit uses IP-based keying ([#10349](https://github.com/parse-community/parse-server/issues/10349)) ([63c37c4](https://github.com/parse-community/parse-server/commit/63c37c49c7a72dc617635da8859004503021b8fd))
+
 # [9.7.0-alpha.14](https://github.com/parse-community/parse-server/compare/9.7.0-alpha.13...9.7.0-alpha.14) (2026-03-29)
 
 
