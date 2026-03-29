@@ -1,3 +1,10 @@
+# [9.7.0-alpha.14](https://github.com/parse-community/parse-server/compare/9.7.0-alpha.13...9.7.0-alpha.14) (2026-03-29)
+
+
+### Bug Fixes
+
+* Session field immutability bypass via falsy-value guard ([GHSA-f6j3-w9v3-cq22](https://github.com/parse-community/parse-server/security/advisories/GHSA-f6j3-w9v3-cq22)) ([#10347](https://github.com/parse-community/parse-server/issues/10347)) ([9080296](https://github.com/parse-community/parse-server/commit/90802969fc713b7bc9733d7255c7519a6ed75d21))
+
 # [9.7.0-alpha.13](https://github.com/parse-community/parse-server/compare/9.7.0-alpha.12...9.7.0-alpha.13) (2026-03-29)
 
 
