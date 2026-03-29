@@ -1,3 +1,10 @@
+# [9.7.0-alpha.17](https://github.com/parse-community/parse-server/compare/9.7.0-alpha.16...9.7.0-alpha.17) (2026-03-29)
+
+
+### Bug Fixes
+
+* Cloud Code trigger context vulnerable to prototype pollution ([#10352](https://github.com/parse-community/parse-server/issues/10352)) ([d5f5128](https://github.com/parse-community/parse-server/commit/d5f5128ade49749856d8ad5f9750ffd26d44836a))
+
 # [9.7.0-alpha.16](https://github.com/parse-community/parse-server/compare/9.7.0-alpha.15...9.7.0-alpha.16) (2026-03-29)
 
 
