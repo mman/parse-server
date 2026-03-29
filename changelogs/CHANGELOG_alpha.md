@@ -1,3 +1,10 @@
+# [9.7.0-alpha.13](https://github.com/parse-community/parse-server/compare/9.7.0-alpha.12...9.7.0-alpha.13) (2026-03-29)
+
+
+### Features
+
+* Add support for `partialFilterExpression` in MongoDB storage adapter ([#10346](https://github.com/parse-community/parse-server/issues/10346)) ([8dd7bf2](https://github.com/parse-community/parse-server/commit/8dd7bf2f61c07b0467d6dbc7aad5142db6694339))
+
 # [9.7.0-alpha.12](https://github.com/parse-community/parse-server/compare/9.7.0-alpha.11...9.7.0-alpha.12) (2026-03-29)
 
 
