@@ -1,3 +1,10 @@
+# [9.7.0-alpha.18](https://github.com/parse-community/parse-server/compare/9.7.0-alpha.17...9.7.0-alpha.18) (2026-03-30)
+
+
+### Features
+
+* Extend storage adapter interface to optionally return `matchedCount` and `modifiedCount` from `DatabaseController.update` with `many: true` ([#10353](https://github.com/parse-community/parse-server/issues/10353)) ([aea7596](https://github.com/parse-community/parse-server/commit/aea7596cd2336c1c179ae130efd550f1596f5f3a))
+
 # [9.7.0-alpha.17](https://github.com/parse-community/parse-server/compare/9.7.0-alpha.16...9.7.0-alpha.17) (2026-03-29)
 
 
