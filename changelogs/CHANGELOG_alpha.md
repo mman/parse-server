@@ -1,3 +1,10 @@
+## [9.7.1-alpha.3](https://github.com/parse-community/parse-server/compare/9.7.1-alpha.2...9.7.1-alpha.3) (2026-04-01)
+
+
+### Bug Fixes
+
+* Session field guard bypass via falsy values for ACL and user fields ([#10382](https://github.com/parse-community/parse-server/issues/10382)) ([ead12bd](https://github.com/parse-community/parse-server/commit/ead12bd1df7f11013d9266e41014dcb143351341))
+
 ## [9.7.1-alpha.2](https://github.com/parse-community/parse-server/compare/9.7.1-alpha.1...9.7.1-alpha.2) (2026-04-01)
 
 
