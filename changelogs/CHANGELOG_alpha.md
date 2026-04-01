@@ -1,3 +1,10 @@
+## [9.7.1-alpha.2](https://github.com/parse-community/parse-server/compare/9.7.1-alpha.1...9.7.1-alpha.2) (2026-04-01)
+
+
+### Bug Fixes
+
+* Nested batch sub-requests cause unclear error ([#10371](https://github.com/parse-community/parse-server/issues/10371)) ([6635096](https://github.com/parse-community/parse-server/commit/66350964c8a200eb9e4540f6fcdc0fe0099c5ff6))
+
 ## [9.7.1-alpha.1](https://github.com/parse-community/parse-server/compare/9.7.0...9.7.1-alpha.1) (2026-03-30)
 
 
