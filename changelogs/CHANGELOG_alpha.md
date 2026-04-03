@@ -1,3 +1,10 @@
+# [9.8.0-alpha.1](https://github.com/parse-community/parse-server/compare/9.7.1-alpha.4...9.8.0-alpha.1) (2026-04-03)
+
+
+### Features
+
+* Add route block with new server option `routeAllowList` ([#10389](https://github.com/parse-community/parse-server/issues/10389)) ([f2d06e7](https://github.com/parse-community/parse-server/commit/f2d06e7b95242268607bfa5205b4e86ba7c7698e))
+
 ## [9.7.1-alpha.4](https://github.com/parse-community/parse-server/compare/9.7.1-alpha.3...9.7.1-alpha.4) (2026-04-02)
 
 
