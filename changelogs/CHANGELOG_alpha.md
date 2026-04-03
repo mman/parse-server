@@ -1,3 +1,10 @@
+# [9.8.0-alpha.2](https://github.com/parse-community/parse-server/compare/9.8.0-alpha.1...9.8.0-alpha.2) (2026-04-03)
+
+
+### Bug Fixes
+
+* Maintenance key IP mismatch silently downgrades to regular auth instead of rejecting ([#10391](https://github.com/parse-community/parse-server/issues/10391)) ([7d8b367](https://github.com/parse-community/parse-server/commit/7d8b367e0b3ef9e9dd6735408068895ead873a0c))
+
 # [9.8.0-alpha.1](https://github.com/parse-community/parse-server/compare/9.7.1-alpha.4...9.8.0-alpha.1) (2026-04-03)
 
 
