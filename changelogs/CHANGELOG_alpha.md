@@ -1,3 +1,10 @@
+# [9.8.0-alpha.5](https://github.com/parse-community/parse-server/compare/9.8.0-alpha.4...9.8.0-alpha.5) (2026-04-04)
+
+
+### Features
+
+* Add support for invoking Cloud Function with `multipart/form-data` protocol ([#10395](https://github.com/parse-community/parse-server/issues/10395)) ([a3f36a2](https://github.com/parse-community/parse-server/commit/a3f36a2ddb981d9868ddf26b128e24b2d58214bd))
+
 # [9.8.0-alpha.4](https://github.com/parse-community/parse-server/compare/9.8.0-alpha.3...9.8.0-alpha.4) (2026-04-03)
 
 
