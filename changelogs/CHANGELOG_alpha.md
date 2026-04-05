@@ -1,3 +1,10 @@
+# [9.8.0-alpha.6](https://github.com/parse-community/parse-server/compare/9.8.0-alpha.5...9.8.0-alpha.6) (2026-04-05)
+
+
+### Bug Fixes
+
+* Login timing side-channel reveals user existence ([GHSA-mmpq-5hcv-hf2v](https://github.com/parse-community/parse-server/security/advisories/GHSA-mmpq-5hcv-hf2v)) ([#10398](https://github.com/parse-community/parse-server/issues/10398)) ([531b9ab](https://github.com/parse-community/parse-server/commit/531b9ab6dda4268ede365367fcdc6d98e737ccc3))
+
 # [9.8.0-alpha.5](https://github.com/parse-community/parse-server/compare/9.8.0-alpha.4...9.8.0-alpha.5) (2026-04-04)
 
 
