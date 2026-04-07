@@ -1,3 +1,10 @@
+# [9.8.0-alpha.9](https://github.com/parse-community/parse-server/compare/9.8.0-alpha.8...9.8.0-alpha.9) (2026-04-07)
+
+
+### Bug Fixes
+
+* Endpoints `/login` and `/verifyPassword` ignore `_User` `protectedFields` ([#10409](https://github.com/parse-community/parse-server/issues/10409)) ([8a3db3b](https://github.com/parse-community/parse-server/commit/8a3db3b9666ea998a8843c629e1af55b105e22e0))
+
 # [9.8.0-alpha.8](https://github.com/parse-community/parse-server/compare/9.8.0-alpha.7...9.8.0-alpha.8) (2026-04-07)
 
 
