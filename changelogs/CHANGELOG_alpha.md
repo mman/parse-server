@@ -1,3 +1,10 @@
+# [9.8.0-alpha.10](https://github.com/parse-community/parse-server/compare/9.8.0-alpha.9...9.8.0-alpha.10) (2026-04-07)
+
+
+### Bug Fixes
+
+* Master key does not bypass `protectedFields` on various endpoints ([#10412](https://github.com/parse-community/parse-server/issues/10412)) ([c0889c8](https://github.com/parse-community/parse-server/commit/c0889c8575ee6c6ee01c79cd1ae457124e2a08b3))
+
 # [9.8.0-alpha.9](https://github.com/parse-community/parse-server/compare/9.8.0-alpha.8...9.8.0-alpha.9) (2026-04-07)
 
 
