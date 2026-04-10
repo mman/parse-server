@@ -1,3 +1,10 @@
+# [9.8.0-alpha.12](https://github.com/parse-community/parse-server/compare/9.8.0-alpha.11...9.8.0-alpha.12) (2026-04-10)
+
+
+### Features
+
+* Add `requestComplexity.subqueryLimit` option to limit subquery results ([#10420](https://github.com/parse-community/parse-server/issues/10420)) ([bf40004](https://github.com/parse-community/parse-server/commit/bf40004d258f114c06a3085052ca094384b52b43))
+
 # [9.8.0-alpha.11](https://github.com/parse-community/parse-server/compare/9.8.0-alpha.10...9.8.0-alpha.11) (2026-04-09)
 
 
