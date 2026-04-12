@@ -10,7 +10,7 @@ import { matchesQuery, queryHash } from './QueryTools';
 import { ParsePubSub } from './ParsePubSub';
 import SchemaController from '../Controllers/SchemaController';
 import _ from 'lodash';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import {
   runLiveQueryEventHandlers,
   getTrigger,
@@ -906,7 +906,7 @@ class ParseLiveQueryServer {
       return;
     }
     const hasMasterKey = this._hasMasterKey(request, this.keyPairs);
-    const clientId = uuidv4();
+    const clientId = randomUUID();
     const client = new Client(
       clientId,
       parseWebsocket,
@@ -1057,6 +1057,32 @@ class ParseLiveQueryServer {
             }
           };
           checkDepth(request.query.where, 0);
+        }
+      }
+
+      // Validate allowRegex
+      if (!client.hasMasterKey) {
+        const rc = appConfig.requestComplexity;
+        if (rc && rc.allowRegex === false) {
+          const checkRegex = (where: any) => {
+            if (typeof where !== 'object' || where === null) {
+              return;
+            }
+            for (const key of Object.keys(where)) {
+              const constraint = where[key];
+              if (typeof constraint === 'object' && constraint !== null && constraint.$regex !== undefined) {
+                throw new Parse.Error(Parse.Error.INVALID_QUERY, '$regex operator is not allowed');
+              }
+            }
+            for (const op of ['$or', '$and', '$nor']) {
+              if (Array.isArray(where[op])) {
+                for (const subQuery of where[op]) {
+                  checkRegex(subQuery);
+                }
+              }
+            }
+          };
+          checkRegex(request.query.where);
         }
       }
 

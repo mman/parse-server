@@ -1663,6 +1663,88 @@ describe('Vulnerabilities', () => {
     });
   });
 
+  describe('(GHSA-vr5f-2r24-w5hc) Stored XSS via Content-Type and file extension mismatch', () => {
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+    };
+
+    it('overrides mismatched Content-Type with extension-derived MIME type on buffered upload', async () => {
+      const adapter = Config.get('test').filesController.adapter;
+      const spy = spyOn(adapter, 'createFile').and.callThrough();
+      const content = Buffer.from('<script>alert(1)</script>').toString('base64');
+      await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/files/evil.txt',
+        body: JSON.stringify({
+          _ApplicationId: 'test',
+          _JavaScriptKey: 'test',
+          _ContentType: 'text/html',
+          base64: content,
+        }),
+        headers,
+      });
+      expect(spy).toHaveBeenCalled();
+      const contentTypeArg = spy.calls.mostRecent().args[2];
+      expect(contentTypeArg).toBe('text/plain');
+    });
+
+    it('overrides mismatched Content-Type with extension-derived MIME type on stream upload', async () => {
+      const adapter = Config.get('test').filesController.adapter;
+      const spy = spyOn(adapter, 'createFile').and.callThrough();
+      const body = '<script>alert(1)</script>';
+      await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/files/evil.txt',
+        headers: {
+          ...headers,
+          'Content-Type': 'text/html',
+          'X-Parse-Upload-Mode': 'stream',
+        },
+        body,
+      });
+      expect(spy).toHaveBeenCalled();
+      const contentTypeArg = spy.calls.mostRecent().args[2];
+      expect(contentTypeArg).toBe('text/plain');
+    });
+
+    it('preserves Content-Type when no file extension is present', async () => {
+      const adapter = Config.get('test').filesController.adapter;
+      const spy = spyOn(adapter, 'createFile').and.callThrough();
+      await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/files/noextension',
+        headers: {
+          ...headers,
+          'Content-Type': 'image/png',
+        },
+        body: Buffer.from('fake png content'),
+      });
+      expect(spy).toHaveBeenCalled();
+      const contentTypeArg = spy.calls.mostRecent().args[2];
+      expect(contentTypeArg).toBe('image/png');
+    });
+
+    it('infers Content-Type from extension when none is provided', async () => {
+      const adapter = Config.get('test').filesController.adapter;
+      const spy = spyOn(adapter, 'createFile').and.callThrough();
+      const content = Buffer.from('test content').toString('base64');
+      await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/files/data.txt',
+        body: JSON.stringify({
+          _ApplicationId: 'test',
+          _JavaScriptKey: 'test',
+          base64: content,
+        }),
+        headers,
+      });
+      expect(spy).toHaveBeenCalled();
+      const contentTypeArg = spy.calls.mostRecent().args[2];
+      expect(contentTypeArg).toBe('text/plain');
+    });
+  });
+
   describe('(GHSA-q3vj-96h2-gwvg) SQL Injection via Increment amount on nested Object field', () => {
     const headers = {
       'Content-Type': 'application/json',
@@ -5536,6 +5618,158 @@ describe('Vulnerabilities', () => {
       expect(response.status).toBe(201);
       expect(contextAfterDelete).toBeDefined();
       expect(contextAfterDelete.isAdmin).toBeUndefined();
+    });
+  });
+
+  describe('(GHSA-hpm8-9qx6-jvwv) Ranged file download bypasses afterFind(Parse.File) trigger and validators', () => {
+    it_only_db('mongo')('enforces afterFind requireUser validator on streaming file download', async () => {
+      const file = new Parse.File('secret.txt', [1, 2, 3], 'text/plain');
+      await file.save({ useMasterKey: true });
+      Parse.Cloud.afterFind(Parse.File, () => {}, { requireUser: true });
+      const response = await request({
+        url: file.url(),
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'Range': 'bytes=0-2',
+        },
+      }).catch(e => e);
+      expect(response.status).toBe(403);
+    });
+
+    it('enforces afterFind requireUser validator on non-streaming file download', async () => {
+      const file = new Parse.File('secret.txt', [1, 2, 3], 'text/plain');
+      await file.save({ useMasterKey: true });
+      Parse.Cloud.afterFind(Parse.File, () => {}, { requireUser: true });
+      const response = await request({
+        url: file.url(),
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+      }).catch(e => e);
+      expect(response.status).toBe(403);
+    });
+
+    it_only_db('mongo')('allows streaming file download when afterFind requireUser validator passes', async () => {
+      const file = new Parse.File('secret.txt', [1, 2, 3], 'text/plain');
+      await file.save({ useMasterKey: true });
+      const user = await Parse.User.signUp('username', 'password');
+      Parse.Cloud.afterFind(Parse.File, () => {}, { requireUser: true });
+      const response = await request({
+        url: file.url(),
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': user.getSessionToken(),
+          'Range': 'bytes=0-2',
+        },
+      }).catch(e => e);
+      expect(response.status).toBe(206);
+    });
+
+    it_only_db('mongo')('enforces afterFind custom authorization on streaming file download', async () => {
+      const file = new Parse.File('secret.txt', [1, 2, 3], 'text/plain');
+      await file.save({ useMasterKey: true });
+      Parse.Cloud.afterFind(Parse.File, () => {
+        throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Access denied');
+      });
+      const response = await request({
+        url: file.url(),
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'Range': 'bytes=0-2',
+        },
+      }).catch(e => e);
+      expect(response.status).toBe(403);
+    });
+  });
+
+  describe('(GHSA-g4v2-qx3q-4p64) /sessions/me bypasses _Session protectedFields', () => {
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+
+    it('should not return protected fields on GET /sessions/me', async () => {
+      await reconfigureServer({
+        protectedFields: {
+          _Session: { '*': ['createdWith'] },
+        },
+      });
+      const user = new Parse.User();
+      user.setUsername('session-pf-user');
+      user.setPassword('password123');
+      user.set('email', 'session-pf@example.com');
+      await user.signUp();
+      const sessionToken = user.getSessionToken();
+
+      // Normal GET /sessions should strip createdWith
+      const sessionsResponse = await request({
+        method: 'GET',
+        url: 'http://localhost:8378/1/sessions',
+        headers: { ...headers, 'X-Parse-Session-Token': sessionToken },
+      });
+      expect(sessionsResponse.data.results[0].createdWith).toBeUndefined();
+
+      // GET /sessions/me should also strip createdWith
+      const meResponse = await request({
+        method: 'GET',
+        url: 'http://localhost:8378/1/sessions/me',
+        headers: { ...headers, 'X-Parse-Session-Token': sessionToken },
+      });
+      expect(meResponse.data.createdWith).toBeUndefined();
+    });
+
+    it('should return non-protected fields on GET /sessions/me', async () => {
+      await reconfigureServer({
+        protectedFields: {
+          _Session: { '*': ['createdWith'] },
+        },
+      });
+      const user = new Parse.User();
+      user.setUsername('session-pf-user2');
+      user.setPassword('password123');
+      user.set('email', 'session-pf2@example.com');
+      await user.signUp();
+      const sessionToken = user.getSessionToken();
+
+      const meResponse = await request({
+        method: 'GET',
+        url: 'http://localhost:8378/1/sessions/me',
+        headers: { ...headers, 'X-Parse-Session-Token': sessionToken },
+      });
+      expect(meResponse.data.sessionToken).toBe(sessionToken);
+      expect(meResponse.data.objectId).toBeDefined();
+      expect(meResponse.data.user).toBeDefined();
+    });
+
+    it('should return protected fields on GET /sessions/me with master key', async () => {
+      await reconfigureServer({
+        protectedFields: {
+          _Session: { '*': ['createdWith'] },
+        },
+      });
+      const user = new Parse.User();
+      user.setUsername('session-pf-mk');
+      user.setPassword('password123');
+      user.set('email', 'session-pf-mk@example.com');
+      await user.signUp();
+      const sessionToken = user.getSessionToken();
+
+      const meResponse = await request({
+        method: 'GET',
+        url: 'http://localhost:8378/1/sessions/me',
+        headers: {
+          ...headers,
+          'X-Parse-Session-Token': sessionToken,
+          'X-Parse-Master-Key': 'test',
+        },
+      });
+      expect(meResponse.data.createdWith).toBeDefined();
+      expect(meResponse.data.sessionToken).toBe(sessionToken);
     });
   });
 });

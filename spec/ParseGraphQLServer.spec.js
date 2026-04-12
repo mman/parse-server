@@ -30,7 +30,7 @@ const {
 const { ParseServer } = require('../');
 const { ParseGraphQLServer } = require('../lib/GraphQL/ParseGraphQLServer');
 const { ReadPreference, Collection } = require('mongodb');
-const { v4: uuidv4 } = require('uuid');
+const { randomUUID: uuidv4 } = require('crypto');
 
 function handleError(e) {
   if (e && e.networkError && e.networkError.result && e.networkError.result.errors) {
@@ -44,7 +44,6 @@ describe('ParseGraphQLServer', () => {
   let parseServer;
   let parseGraphQLServer;
   let loggerErrorSpy;
-
 
   beforeEach(async () => {
     parseServer = await global.reconfigureServer({

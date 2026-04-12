@@ -7,6 +7,7 @@ const request = require('../lib/request');
 const Config = require('../lib/Config');
 const TestUtils = require('../lib/TestUtils');
 const Utils = require('../lib/Utils');
+const { randomUUID: uuidv4 } = require('crypto');
 
 const fakeClient = {
   s: { options: { dbName: null } },
@@ -308,9 +309,8 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
   });
 
   it('upserts with $setOnInsert', async () => {
-    const uuid = require('uuid');
-    const uuid1 = uuid.v4();
-    const uuid2 = uuid.v4();
+    const uuid1 = uuidv4();
+    const uuid2 = uuidv4();
     const schema = {
       className: 'MyClass',
       fields: {
