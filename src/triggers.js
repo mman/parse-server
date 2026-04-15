@@ -382,6 +382,12 @@ export function getResponseObject(request, resolve, reject) {
         });
         return resolve(response);
       }
+      // Preserve the cloud handler's return value for beforePasswordResetRequest
+      // so callers can act on it (e.g. return `false` to suppress the default
+      // password reset email send).
+      if (request.triggerName === Types.beforePasswordResetRequest) {
+        return resolve(response);
+      }
       // Use the JSON response
       if (
         response &&

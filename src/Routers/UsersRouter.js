@@ -608,6 +608,7 @@ export class UsersRouter extends ClassesRouter {
       );
     }
 
+    let triggerResult;
     if (userData) {
       this._sanitizeAuthData(userData);
       // Get files attached to user
@@ -615,7 +616,7 @@ export class UsersRouter extends ClassesRouter {
 
       const user = inflate('_User', userData);
 
-      await maybeRunTrigger(
+      triggerResult = await maybeRunTrigger(
         TriggerTypes.beforePasswordResetRequest,
         req.auth,
         user,
@@ -623,6 +624,15 @@ export class UsersRouter extends ClassesRouter {
         req.config,
         req.info.context
       );
+    }
+
+    // A `beforePasswordResetRequest` handler can return `false` to indicate
+    // that it has handled the email itself and the default send should be
+    // skipped. Any other return value preserves existing behavior.
+    if (triggerResult === false) {
+      return {
+        response: {},
+      };
     }
 
     const userController = req.config.userController;
