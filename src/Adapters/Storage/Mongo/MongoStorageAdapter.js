@@ -300,6 +300,13 @@ export class MongoStorageAdapter implements StorageAdapter {
     if (!this.client) {
       return;
     }
+    // Close the schema change stream before the client, otherwise closing the client
+    // interrupts the stream's checked-out connection and emits an unhandled error
+    if (this._stream) {
+      const stream = this._stream;
+      this._stream = undefined;
+      await stream.close().catch(() => {});
+    }
     await this.client.close(false);
     delete this.connectionPromise;
   }
@@ -318,6 +325,10 @@ export class MongoStorageAdapter implements StorageAdapter {
         if (!this._stream && this.enableSchemaHooks) {
           this._stream = collection._mongoCollection.watch();
           this._stream.on('change', () => this._onchange());
+          // An unhandled 'error' event would terminate the process
+          this._stream.on('error', error => {
+            logger.error('Schema change stream error', error);
+          });
         }
         return new MongoSchemaCollection(collection);
       });

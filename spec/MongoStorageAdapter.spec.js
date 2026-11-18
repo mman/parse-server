@@ -410,6 +410,29 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
     ).toBeRejectedWith(jasmine.is(error));
   });
 
+  it('handleShutdown closes the schema change stream before the client', async () => {
+    const adapter = new MongoStorageAdapter({
+      uri: databaseURI,
+      mongoOptions: { enableSchemaHooks: true },
+    });
+    adapter.watch(() => {});
+    await adapter._schemaCollection();
+    expect(adapter._stream).toBeDefined();
+    const stream = adapter._stream;
+    const closeOrder = [];
+    spyOn(stream, 'close').and.callFake(async () => closeOrder.push('stream'));
+    const clientClose = adapter.client.close.bind(adapter.client);
+    spyOn(adapter.client, 'close').and.callFake(async force => {
+      closeOrder.push('client');
+      return clientClose(force);
+    });
+
+    await adapter.handleShutdown();
+
+    expect(closeOrder).toEqual(['stream', 'client']);
+    expect(adapter._stream).toBeUndefined();
+  });
+
   it('handleShutdown, close connection', async () => {
     const adapter = new MongoStorageAdapter({ uri: databaseURI });
 
