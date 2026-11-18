@@ -45,7 +45,7 @@ import CheckRunner from './Security/CheckRunner';
 import Deprecator from './Deprecator/Deprecator';
 import { DefinedSchemas } from './SchemaMigrations/DefinedSchemas';
 import OptionsDefinitions from './Options/Definitions';
-import { resolvingPromise, Connections } from './TestUtils';
+import { Connections } from './TestUtils';
 
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
@@ -61,6 +61,7 @@ class ParseServer {
   server: any;
   expressApp: any;
   liveQueryServer: any;
+  _shutdownPromise: Promise<void> | undefined;
   /**
    * @constructor
    * @param {ParseServerOptions} options the parse server initialization options
@@ -229,36 +230,101 @@ class ParseServer {
   /**
    * Stops the parse server, cancels any ongoing requests and closes all connections.
    *
-   * Currently, express doesn't shut down immediately after receiving SIGINT/SIGTERM
-   * if it has client connections that haven't timed out.
-   * (This is a known issue with node - https://github.com/nodejs/node/issues/2642)
+   * The shutdown happens in phases:
+   * 1. The server state is set to `draining`. The health endpoint responds with HTTP status `503`
+   *    while all other requests are still served, so that load balancers and orchestrators can stop
+   *    routing new traffic to this instance. This phase lasts `shutdownDrainDelay` milliseconds.
+   * 2. The HTTP server stops accepting new connections and closes idle keep-alive connections.
+   *    Requests that are still in-flight are allowed to complete for up to `shutdownTimeout`
+   *    milliseconds, after which any remaining connections are destroyed.
+   * 3. The LiveQuery server, the database, file and cache adapters are shut down and
+   *    `serverCloseComplete` is called.
    *
-   * @returns {Promise<void>} a promise that resolves when the server is stopped
+   * With the default option values of `0` the shutdown is immediate.
+   *
+   * If Parse Server is mounted into an existing Express app and the HTTP server is created outside
+   * of Parse Server, assign that HTTP server to `parseServer.server` after calling `listen()` so
+   * that it can be drained and closed here.
+   *
+   * Calling this method more than once returns the promise of the first call.
+   *
+   * @returns {Promise<void>} a promise that resolves once the server has shut down.
    */
-  async handleShutdown() {
-    const serverClosePromise = resolvingPromise();
-    const liveQueryServerClosePromise = resolvingPromise();
-    const promises = [];
-    this.server.close((error) => {
-      /* istanbul ignore next */
-      if (error) {
-        // eslint-disable-next-line no-console
-        console.error('Error while closing parse server', error);
-      }
-      serverClosePromise.resolve();
-    });
-    if (this.liveQueryServer?.server?.close && this.liveQueryServer.server !== this.server) {
-      this.liveQueryServer.server.close((error) => {
-        /* istanbul ignore next */
-        if (error) {
-          // eslint-disable-next-line no-console
-          console.error('Error while closing live query server', error);
-        }
-        liveQueryServerClosePromise.resolve();
-      });
-    } else {
-      liveQueryServerClosePromise.resolve();
+  handleShutdown(): Promise<void> {
+    if (!this._shutdownPromise) {
+      this._shutdownPromise = this._handleShutdown();
     }
+    return this._shutdownPromise;
+  }
+
+  async _handleShutdown() {
+    const drainDelay = Math.max(0, Number(this.config.shutdownDrainDelay) || 0);
+    const timeout = Math.max(0, Number(this.config.shutdownTimeout) || 0);
+
+    // Phase 1: announce the shutdown via the health endpoint while still serving requests
+    this.config.state = 'draining';
+    if (drainDelay > 0) {
+      await new Promise(resolve => setTimeout(resolve, drainDelay));
+    }
+
+    // Phase 2: stop accepting new connections and let in-flight requests complete
+    const servers = [];
+    if (this.server) {
+      servers.push(this.server);
+    }
+    if (this.liveQueryServer?.server?.close && this.liveQueryServer.server !== this.server) {
+      servers.push(this.liveQueryServer.server);
+    }
+    const allClosed = Promise.all(
+      servers.map(
+        server =>
+          new Promise<void>(resolve => {
+            server.close((error: any) => {
+              /* istanbul ignore next */
+              if (error) {
+                // eslint-disable-next-line no-console
+                console.error('Error while closing server', error);
+              }
+              resolve();
+            });
+            if (typeof server.closeIdleConnections === 'function') {
+              server.closeIdleConnections();
+            }
+          })
+      )
+    );
+    if (timeout > 0) {
+      // Keep-alive connections that become idle after their current request completes are closed
+      // periodically, so that the shutdown does not wait for the client to close them.
+      const closeIdleInterval = setInterval(() => {
+        for (const server of servers) {
+          if (typeof server.closeIdleConnections === 'function') {
+            server.closeIdleConnections();
+          }
+        }
+      }, 100);
+      let timer;
+      await Promise.race([
+        allClosed,
+        new Promise(resolve => {
+          timer = setTimeout(resolve, timeout);
+        }),
+      ]);
+      clearTimeout(timer);
+      clearInterval(closeIdleInterval);
+    }
+
+    // Phase 3: destroy remaining connections and shut down adapters
+    if (this.liveQueryServer) {
+      await this.liveQueryServer.shutdown();
+    }
+    connections.destroyAll();
+    for (const server of servers) {
+      if (typeof server.closeAllConnections === 'function') {
+        server.closeAllConnections();
+      }
+    }
+    const promises = [];
     const { adapter: databaseAdapter } = this.config.databaseController;
     if (databaseAdapter && typeof databaseAdapter.handleShutdown === 'function') {
       promises.push(databaseAdapter.handleShutdown());
@@ -271,12 +337,8 @@ class ParseServer {
     if (cacheAdapter && typeof cacheAdapter.handleShutdown === 'function') {
       promises.push(cacheAdapter.handleShutdown());
     }
-    if (this.liveQueryServer) {
-      promises.push(this.liveQueryServer.shutdown());
-    }
     await Promise.all(promises);
-    connections.destroyAll();
-    await Promise.all([serverClosePromise, liveQueryServerClosePromise]);
+    await allClosed;
     if (this.config.serverCloseComplete) {
       this.config.serverCloseComplete();
     }

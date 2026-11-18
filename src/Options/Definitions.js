@@ -97,6 +97,14 @@ module.exports.ParseServerOptions = {
     help: 'Adapter module for the analytics',
     action: parsers.moduleOrObjectParser,
   },
+  appHeroImageURL: {
+    env: 'PARSE_SERVER_APP_HERO_IMAGE_URL',
+    help: 'Sets the app hero image URL',
+  },
+  appHomePageURL: {
+    env: 'PARSE_SERVER_APP_HOME_PAGE_URL',
+    help: 'Sets the app home page URL',
+  },
   appId: {
     env: 'PARSE_SERVER_APPLICATION_ID',
     help: 'Your Parse Application ID',
@@ -105,14 +113,6 @@ module.exports.ParseServerOptions = {
   appName: {
     env: 'PARSE_SERVER_APP_NAME',
     help: 'Sets the app name',
-  },
-  appHomePageURL: {
-    env: 'PARSE_SERVER_APP_HOMEPAGE_URL',
-    help: 'Sets the app home page URL',
-  },
-  appHeroImageURL: {
-    env: 'PARSE_SERVER_APP_HERO_IMAGE_URL',
-    help: 'Sets the app hero image URL',
   },
   auth: {
     env: 'PARSE_SERVER_AUTH_PROVIDERS',
@@ -645,6 +645,18 @@ module.exports.ParseServerOptions = {
     help: 'Session duration, in seconds, defaults to 1 year',
     action: parsers.numberParser('sessionLength'),
     default: 31536000,
+  },
+  shutdownDrainDelay: {
+    env: 'PARSE_SERVER_SHUTDOWN_DRAIN_DELAY',
+    help: 'Delay in milliseconds between the start of a shutdown via `handleShutdown()` and the moment Parse Server stops accepting new connections.<br><br>During this delay the health endpoint responds with HTTP status `503` and `{"status":"draining"}` while all other requests are still served normally. This allows load balancers and orchestrators, for example Kubernetes via a readiness probe on the health endpoint, to stop routing new traffic to this instance before it closes. Set this to a value larger than the time it takes for the routing layer to detect the failing health check.<br><br>Defaults to `0`, which stops accepting new connections immediately.',
+    action: parsers.numberParser('shutdownDrainDelay'),
+    default: 0,
+  },
+  shutdownTimeout: {
+    env: 'PARSE_SERVER_SHUTDOWN_TIMEOUT',
+    help: 'Maximum time in milliseconds to wait for in-flight requests to complete after Parse Server has stopped accepting new connections during a shutdown via `handleShutdown()`.<br><br>Idle keep-alive connections are closed immediately. Connections with a request in progress are given until this timeout expires and are destroyed afterwards.<br><br>Defaults to `0`, which destroys all open connections immediately.',
+    action: parsers.numberParser('shutdownTimeout'),
+    default: 0,
   },
   silent: {
     env: 'SILENT',
