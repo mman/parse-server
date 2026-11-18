@@ -81,7 +81,9 @@ export default class PromiseRouter {
       const layer = route.layer || new Layer(route.path, null, route.handler);
       const match = layer.match(path);
       if (match) {
-        return { params: layer.params, handler: route.handler };
+        // router < 2.3.0 stores the parsed params on the layer, router >= 2.3.0 returns them
+        const params = (typeof match === 'object' && match.params) || layer.params || {};
+        return { params, handler: route.handler };
       }
     }
   }

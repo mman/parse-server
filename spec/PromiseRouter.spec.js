@@ -31,6 +31,25 @@ describe('PromiseRouter', () => {
     );
   });
 
+  it('passes route parameters to the handler when the router Layer returns the match (router >= 2.3.0)', async () => {
+    const Layer = require('router/lib/layer');
+    spyOn(Layer.prototype, 'match').and.callFake(function (path) {
+      // router 2.3.0 changed Layer.match() to return the match result instead of storing it on the layer
+      this.params = undefined;
+      return path === '/classes/GameScore'
+        ? { params: { className: 'GameScore' }, path, keys: ['className'], pattern: '/classes/:className' }
+        : false;
+    });
+    const router = new PromiseRouter();
+    let received;
+    router.route('GET', '/classes/:className', req => {
+      received = req.params;
+      return Promise.resolve({ response: {} });
+    });
+    await router.tryRouteRequest('GET', '/classes/GameScore', {});
+    expect(received).toEqual({ className: 'GameScore' });
+  });
+
   it('passes route parameters to the handler as decoded from the path', () => {
     const router = new PromiseRouter();
     router.route('GET', '/classes/:className/:objectId', () => Promise.resolve({ response: {} }));
